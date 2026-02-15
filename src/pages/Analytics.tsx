@@ -1,11 +1,12 @@
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Calendar, 
-  Download, 
+import {
+  TrendingUp,
+  TrendingDown,
+  Calendar,
+  Download,
   Filter,
   BarChart3,
   PieChart,
@@ -14,21 +15,108 @@ import {
 import { IncomeExpenseChart } from "@/components/charts/IncomeExpenseChart";
 import { ProfitLossChart } from "@/components/charts/ProfitLossChart";
 import { CategoryChart } from "@/components/charts/CategoryChart";
+import axios from "axios";
+import { useAuth } from "@/contexts/AuthContext";
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function Analytics() {
-  const performanceMetrics = [
-    { label: "Revenue Growth", value: "+18.2%", trend: "up", color: "text-success" },
-    { label: "Expense Ratio", value: "42%", trend: "down", color: "text-warning" },
-    { label: "Profit Margin", value: "58%", trend: "up", color: "text-success" },
-    { label: "Customer Retention", value: "94%", trend: "up", color: "text-success" },
-  ];
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [performanceMetrics, setPerformanceMetrics] = useState<any[]>([]);
+  const [topCategories, setTopCategories] = useState<any[]>([]);
+  const [weeklyStats, setWeeklyStats] = useState<any[]>([]);
+  const [categoryData, setCategoryData] = useState<any[]>([]);
+  const [insights, setInsights] = useState({
+    cost: "Loading insights...",
+    growth: "Analyzing category trends..."
+  });
 
-  const topCategories = [
-    { name: "Dairy Products", revenue: 12500, growth: "+15%" },
-    { name: "Beverages", revenue: 8900, growth: "+8%" },
-    { name: "Snacks", revenue: 6400, growth: "+22%" },
-    { name: "Groceries", revenue: 4200, growth: "+5%" },
-  ];
+  const { token } = useAuth();
+
+  useEffect(() => {
+    fetchAnalytics();
+  }, [token]);
+
+  const fetchAnalytics = async () => {
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    try {
+
+      // Fetch all required analytics
+      const [growthRes, spendingRes, weeklyRes] = await Promise.all([
+        axios.get(`${API_URL}/api/analytics/growth`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API_URL}/api/analytics/spending`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }),
+        axios.get(`${API_URL}/api/analytics/weekly-stats`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+      ]);
+
+      const growth = growthRes.data;
+      setPerformanceMetrics([
+        { label: "Revenue Growth", value: growth.revenueGrowth, trend: growth.revenueGrowth.startsWith('-') ? "down" : "up", color: growth.revenueGrowth.startsWith('-') ? "text-destructive" : "text-success" },
+        { label: "Expense Ratio", value: growth.expenseRatio, trend: "neutral", color: "text-warning" },
+        { label: "Profit Margin", value: growth.profitMargin, trend: growth.profitMargin.startsWith('-') ? "down" : "up", color: growth.profitMargin.startsWith('-') ? "text-destructive" : "text-success" },
+        { label: "Customer Retention", value: growth.customerRetention, trend: "up", color: "text-success" },
+      ]);
+
+      const topCats = spendingRes.data.topCategories.map((cat: any) => ({
+        name: cat.name,
+        revenue: cat.amount || 0,
+        growth: "+0%"
+      }));
+      setTopCategories(topCats);
+      setCategoryData(spendingRes.data.topCategories.map((cat: any) => ({
+        ...cat,
+        value: cat.amount || 0
+      })));
+      setWeeklyStats(weeklyRes.data);
+
+      // Generate dynamic insights
+      const topCat = spendingRes.data.topCategories[0];
+      const revGrowth = growth.revenueGrowth;
+      const expRatioStr = growth.expenseRatio.replace('%', '');
+      const expRatio = parseInt(expRatioStr) || 0;
+
+      setInsights({
+        cost: expRatio > 50
+          ? `Your expense ratio is ${growth.expenseRatio}. Focus on lowering your ${topCat?.name || 'highest'} spending to improve profit margins.`
+          : expRatio > 0
+            ? `Your expense ratio of ${growth.expenseRatio} is very healthy. You're managing costs effectively this month.`
+            : "Add some expenses to see cost optimization advice.",
+        growth: topCat
+          ? `${topCat.name} is your star category with ₹${(topCat.amount || 0).toLocaleString()} in revenue. ${revGrowth.startsWith('+') ? 'Your upward trend is looking strong!' : 'Monitor this category for seasonal changes.'}`
+          : "Your revenue trends will appear here as you record more sales."
+      });
+    } catch (error: any) {
+      console.error('Error fetching analytics:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      setError(error.response?.data?.error || error.message || 'Failed to load analytics');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="container mx-auto p-6">Loading analytics...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
+          <strong>Error:</strong> {error}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -96,7 +184,7 @@ export default function Analytics() {
                 <CardDescription>Last 7 days performance breakdown</CardDescription>
               </CardHeader>
               <CardContent>
-                <IncomeExpenseChart />
+                <IncomeExpenseChart data={weeklyStats} />
               </CardContent>
             </Card>
 
@@ -109,7 +197,7 @@ export default function Analytics() {
                 <CardDescription>Daily profit/loss tracking</CardDescription>
               </CardHeader>
               <CardContent>
-                <ProfitLossChart />
+                <ProfitLossChart data={weeklyStats.map(d => ({ name: d.name, profit: d.profit }))} />
               </CardContent>
             </Card>
           </div>
@@ -124,11 +212,11 @@ export default function Analytics() {
                   <CardDescription>Analyze which categories drive the most revenue</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <CategoryChart />
+                  <CategoryChart data={categoryData} />
                 </CardContent>
               </Card>
             </div>
-            
+
             <Card className="shadow-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -142,7 +230,7 @@ export default function Analytics() {
                   <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div>
                       <p className="font-medium">{category.name}</p>
-                      <p className="text-sm text-muted-foreground">₹{category.revenue.toLocaleString()}</p>
+                      <p className="text-sm text-muted-foreground">₹{(category.revenue || 0).toLocaleString()}</p>
                     </div>
                     <div className="text-success text-sm font-medium">
                       {category.growth}
@@ -162,7 +250,7 @@ export default function Analytics() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                <IncomeExpenseChart />
+                <IncomeExpenseChart data={[]} />
                 <div className="text-center text-muted-foreground">
                   <p>Category-specific analytics coming soon...</p>
                 </div>
@@ -179,7 +267,7 @@ export default function Analytics() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                <ProfitLossChart />
+                <ProfitLossChart data={[]} />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="p-4 bg-success/10 rounded-lg">
                     <h3 className="font-medium text-success">Growing Trend</h3>
@@ -216,13 +304,13 @@ export default function Analytics() {
             <div>
               <h4 className="font-medium mb-2">Cost Optimization</h4>
               <p className="text-sm text-muted-foreground">
-                Your expense ratio has improved by 5% this month. Consider investing the saved amount in inventory expansion.
+                {insights.cost}
               </p>
             </div>
             <div>
               <h4 className="font-medium mb-2">Revenue Growth</h4>
               <p className="text-sm text-muted-foreground">
-                Dairy products show consistent growth. Focus marketing efforts on this category for maximum ROI.
+                {insights.growth}
               </p>
             </div>
           </div>

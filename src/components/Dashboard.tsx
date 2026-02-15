@@ -1,4 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useState, useEffect } from "react";
+import axios from "axios";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Mic, TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3 } from "lucide-react";
 import { IncomeExpenseChart } from "./charts/IncomeExpenseChart";
@@ -8,24 +10,74 @@ import { VoiceButton } from "./VoiceButton";
 import { StatsCard } from "./StatsCard";
 import { useI18n } from "@/contexts/I18nContext";
 import { usePreferences } from "@/contexts/PreferencesContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 export function Dashboard() {
   const { t } = useI18n();
   const { persona } = usePreferences();
-  // Mock data - will be replaced with real data from Supabase
-  const todayStats = {
-    income: 2850,
-    expenses: 1200,
-    profit: 1650,
-    transactions: 15
-  };
+  const { token } = useAuth();
 
-  const recentTransactions = [
-    { id: 1, item: "दूध", type: "expense", amount: 50, time: "10:30 AM" },
-    { id: 2, item: "Cold Drinks", type: "sale", amount: 90, time: "11:45 AM" },
-    { id: 3, item: "चाय पत्ती", type: "expense", amount: 120, time: "2:15 PM" },
-    { id: 4, item: "Snacks", type: "sale", amount: 150, time: "3:30 PM" },
-  ];
+  const [stats, setStats] = useState({
+    income: 0,
+    expenses: 0,
+    profit: 0,
+    transactions: 0
+  });
+  const [growth, setGrowth] = useState({
+    revenueGrowth: "0%",
+    expenseRatio: "0%",
+    profitMargin: "0%",
+    customerRetention: "0%"
+  });
+  const [weeklyStats, setWeeklyStats] = useState<any[]>([]);
+  const [categoryData, setCategoryData] = useState<any[]>([]);
+  const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const [statsRes, weeklyRes, categoryRes, growthRes] = await Promise.all([
+          axios.get(`${import.meta.env.VITE_API_URL}/api/stats`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/analytics/weekly-stats`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/analytics/spending`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          axios.get(`${import.meta.env.VITE_API_URL}/api/analytics/growth`, {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+
+        const data = statsRes.data;
+        setStats({
+          income: data.income || 0,
+          expenses: data.expenses || 0,
+          profit: data.profit || 0,
+          transactions: data.transactions || 0
+        });
+        setRecentTransactions(data.recentTransactions || []);
+        setWeeklyStats(weeklyRes.data);
+        setCategoryData(categoryRes.data.topCategories);
+        setGrowth(growthRes.data);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStats();
+  }, [token]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
@@ -48,32 +100,32 @@ export function Dashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatsCard
             title={t("todays_income", "dashboard")}
-            value={`₹${todayStats.income.toLocaleString()}`}
+            value={`₹${stats.income.toLocaleString()}`}
             icon={TrendingUp}
-            trend="+12%"
+            trend={growth.revenueGrowth}
             className="bg-gradient-success"
           />
           <StatsCard
             title={t("todays_expenses", "dashboard")}
-            value={`₹${todayStats.expenses.toLocaleString()}`}
+            value={`₹${stats.expenses.toLocaleString()}`}
             icon={TrendingDown}
-            trend="-5%"
+            trend={growth.expenseRatio}
             variant="expense"
           />
           {persona === "business" && (
             <StatsCard
               title={t("net_profit", "dashboard")}
-              value={`₹${todayStats.profit.toLocaleString()}`}
+              value={`₹${stats.profit.toLocaleString()}`}
               icon={DollarSign}
-              trend="+18%"
+              trend={growth.profitMargin}
               className="bg-gradient-primary"
             />
           )}
           <StatsCard
             title={t("transactions", "dashboard")}
-            value={todayStats.transactions.toString()}
+            value={stats.transactions.toString()}
             icon={BarChart3}
-            trend="+3"
+            trend={`${stats.transactions > 0 ? '+' : ''}${stats.transactions}`}
             variant="neutral"
           />
         </div>
@@ -88,23 +140,24 @@ export function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <IncomeExpenseChart />
+              <IncomeExpenseChart data={weeklyStats} />
             </CardContent>
           </Card>
 
-          {persona === "business" && (
           <Card className="shadow-card bg-gradient-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="h-5 w-5 text-secondary" />
-                {t("profit_loss_trend", "dashboard")}
+                {t("profit_trend", "dashboard")}
               </CardTitle>
+              <CardDescription>
+                {t("daily_profit_tracking", "dashboard")}
+              </CardDescription>
             </CardHeader>
             <CardContent>
-              <ProfitLossChart />
+              <ProfitLossChart data={weeklyStats.map(d => ({ name: d.name, profit: d.profit }))} />
             </CardContent>
           </Card>
-          )}
         </div>
 
         {/* Category Analysis & Recent Transactions */}
@@ -114,7 +167,7 @@ export function Dashboard() {
               <CardTitle>{t("category_breakdown", "dashboard")}</CardTitle>
             </CardHeader>
             <CardContent>
-              <CategoryChart />
+              <CategoryChart data={categoryData} />
             </CardContent>
           </Card>
 
@@ -133,9 +186,8 @@ export function Dashboard() {
                       <p className="font-medium">{transaction.item}</p>
                       <p className="text-sm text-muted-foreground">{transaction.time}</p>
                     </div>
-                    <div className={`text-right ${
-                      transaction.type === 'sale' ? 'text-success' : 'text-destructive'
-                    }`}>
+                    <div className={`text-right ${transaction.type === 'sale' ? 'text-success' : 'text-destructive'
+                      }`}>
                       <p className="font-semibold">
                         {transaction.type === 'sale' ? '+' : '-'}₹{transaction.amount}
                       </p>
@@ -157,7 +209,15 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              <strong>Track Daily Cash Flow:</strong> Keep monitoring your top categories and spend.
+              {categoryData[0] ? (
+                <>
+                  <strong>Top Performing Category:</strong> {categoryData[0].name} is currently leading your activity. Keep monitoring your flow!
+                </>
+              ) : (
+                <>
+                  <strong>Track Daily Cash Flow:</strong> Add transactions to see category-specific insights here.
+                </>
+              )}
             </p>
           </CardContent>
         </Card>

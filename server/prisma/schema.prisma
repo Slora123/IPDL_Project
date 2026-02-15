@@ -1,42 +1,125 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
+
 model User {
-  id            String        @id @default(cuid())
-  email         String        @unique
-  name          String?
-  picture       String?
-  googleId      String        @unique
-  language      String?
-  persona       String?
-  onboarded     Boolean       @default(false)
-  transactions  Transaction[]
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id        String   @id @default(uuid())
+  googleId  String   @unique
+  email     String   @unique
+  name      String?
+  firstName String?
+  lastName  String?
+  businessName String?
+  phone     String?
+  picture   String?
+  onboarded Boolean  @default(false)
+  language  String   @default("en")
+  persona   String   @default("common")
+  transactions Transaction[]
+  loanAlerts LoanAlert[]
+  reports    Report[]
+  progress   UserProgress[]
+  achievements UserAchievement[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Transaction {
-  id          String   @id @default(cuid())
-  item        String
-  amount      Float
-  type        String   // "income" or "expense"
-  category    String
-  time        String?
-  date        String
-  language    String
-  voiceInput  String?
+  id         String   @id @default(uuid())
+  item       String
+  amount     Float
+  type       String   // 'income' or 'expense'
+  category   String
+  date       String
+  time       String
+  language   String   @default("english")
+  voiceInput String?
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model LoanAlert {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  lender          String
+  amount          Float
+  dueDate         String
+  reminderEnabled Boolean  @default(false)
+  status          String   @default("pending")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Report {
+  id          String   @id @default(uuid())
   userId      String
   user        User     @relation(fields: [userId], references: [id])
+  title       String
+  description String?
+  type        String
+  format      String
+  date        String
+  size        String
+  status      String   @default("processing")
+  url         String?
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
+
+model UserProgress {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id])
+  courseId     String
+  course       Course   @relation(fields: [courseId], references: [id])
+  progress     Int      @default(0)
+  completed    Boolean  @default(false)
+  lastAccessed DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([userId, courseId])
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  modules     Json?
+  userProgress UserProgress[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model UserAchievement {
+  id            String      @id @default(uuid())
+  userId        String
+  user          User        @relation(fields: [userId], references: [id])
+  achievementId String
+  achievement   Achievement @relation(fields: [achievementId], references: [id])
+  unlockedAt    DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@unique([userId, achievementId])
+}
+
+model Achievement {
+  id          String            @id @default(uuid())
+  title       String
+  description String?
+  icon        String?
+  userAchievements UserAchievement[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+

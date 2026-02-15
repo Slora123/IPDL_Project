@@ -1,5 +1,6 @@
 import frontImage from "@/pages/front.jpeg";
 import { useState, useEffect } from "react";
+import { GoogleLogin } from "@react-oauth/google";
 import {
   Card,
   CardContent,
@@ -40,7 +41,7 @@ export function LoginPage() {
   });
 
   const navigate = useNavigate();
-  const { login, user } = useAuth();
+  const { login, testLogin, user } = useAuth();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -52,6 +53,7 @@ export function LoginPage() {
   const languages = [
     { value: "en", label: "English", flag: "🇬🇧" },
     { value: "hi", label: "हिन्दी", flag: "🇮🇳" },
+    { value: "mr", label: "मराठी", flag: "🇮🇳" },
   ];
 
   return (
@@ -71,9 +73,6 @@ export function LoginPage() {
           <CardHeader className="space-y-1">
             <div className="flex items-center justify-between">
               <CardTitle className="text-2xl">Welcome</CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => navigate("/")}>
-                ← Back to Home
-              </Button>
             </div>
             <CardDescription>
               Sign in with your Google account to manage your business expenses.
@@ -107,20 +106,19 @@ export function LoginPage() {
             </div>
 
             <div className="space-y-4">
-              <Button
-                onClick={() => login()}
-                className="w-full h-12 text-lg bg-white text-black border border-gray-300 hover:bg-gray-50 flex items-center justify-center gap-2"
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                ) : (
-                  <>
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="h-5 w-5" />
-                    Sign in with Google
-                  </>
-                )}
-              </Button>
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={(credentialResponse) => {
+                    if (credentialResponse.credential) {
+                      login(credentialResponse.credential);
+                    }
+                  }}
+                  onError={() => {
+                    setError("Login Failed");
+                  }}
+                  useOneTap
+                />
+              </div>
             </div>
 
             <div className="mt-8">

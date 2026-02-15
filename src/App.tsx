@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { PreferencesProvider, usePreferences } from "@/contexts/PreferencesContext";
 import { I18nProvider } from "@/contexts/I18nContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Layout } from "./pages/Layout";
@@ -18,6 +19,7 @@ import Reports from "./pages/Reports";
 import Spending from "./pages/Spending";
 import LoanAlert from "./pages/LoanAlert";
 import Learn from "./pages/Learn";
+import GrowthInsights from "./pages/GrowthInsights";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
@@ -88,7 +90,7 @@ const AppContent = () => {
         <Route path="/insights" element={
           <ProtectedRoute>
             <Layout>
-              <Analytics />
+              <GrowthInsights />
             </Layout>
           </ProtectedRoute>
         } />
@@ -109,7 +111,7 @@ const AppContent = () => {
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <OnboardingDialog open={Boolean(needsOnboarding)} onClose={() => {}} />
+      <OnboardingDialog open={Boolean(needsOnboarding)} onClose={() => { }} />
     </>
   );
 };
@@ -118,15 +120,17 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <PreferencesProvider>
       <I18nProvider>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppContent />
-            </BrowserRouter>
-          </TooltipProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <AppContent />
+              </BrowserRouter>
+            </TooltipProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </I18nProvider>
     </PreferencesProvider>
   </QueryClientProvider>

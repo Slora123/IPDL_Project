@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,12 +6,11 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
-import { 
-  User, 
-  Mic, 
-  Bell, 
-  Globe, 
-  Shield, 
+import {
+  User,
+  Mic,
+  Bell,
+  Shield,
   Smartphone,
   Save,
   RefreshCw,
@@ -20,34 +19,13 @@ import {
   Upload
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import axios from "axios";
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function Settings() {
-  const [settings, setSettings] = useState({
-    // Profile
-    firstName: "राम",
-    lastName: "शर्मा", 
-    email: "ram.sharma@example.com",
-    phone: "+91 98765 43210",
-    businessName: "शर्मा जी की दुकान",
-    
-    // Voice Settings
-    primaryLanguage: "hindi",
-    voiceNotifications: true,
-    voiceAccuracy: "high",
-    autoRecord: false,
-    
-    // Notifications
-    dailyReminders: true,
-    lowStockAlerts: true,
-    profitAlerts: true,
-    emailReports: false,
-    
-    // Privacy
-    dataSync: true,
-    analyticsSharing: false,
-    locationAccess: true
-  });
-
+  const [settings, setSettings] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const languages = [
@@ -56,11 +34,79 @@ export default function Settings() {
     { value: "marathi", label: "Marathi", native: "मराठी" }
   ];
 
-  const handleSave = () => {
-    toast({
-      title: "Settings Saved",
-      description: "Your preferences have been updated successfully.",
-    });
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.get(`${API_URL}/api/user/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSettings(res.data);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_URL}/api/user/profile`, {
+        firstName: settings.firstName,
+        lastName: settings.lastName,
+        businessName: settings.businessName,
+        phone: settings.phone,
+        language: settings.language,
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast({
+        title: "Profile Saved",
+        description: "Your profile has been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save profile",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.put(`${API_URL}/api/user/settings`, {
+        voiceNotifications: settings.voiceNotifications,
+        voiceAccuracy: settings.voiceAccuracy,
+        autoRecord: settings.autoRecord,
+        dailyReminders: settings.dailyReminders,
+        lowStockAlerts: settings.lowStockAlerts,
+        profitAlerts: settings.profitAlerts,
+        emailReports: settings.emailReports,
+        dataSync: settings.dataSync,
+        analyticsSharing: settings.analyticsSharing,
+        locationAccess: settings.locationAccess,
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast({
+        title: "Settings Saved",
+        description: "Your preferences have been updated successfully.",
+      });
+    } catch (error) {
+      console.error('Error saving settings:', error);
+      toast({
+        title: "Error",
+        description: "Failed to save settings",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleExportData = () => {
@@ -77,6 +123,10 @@ export default function Settings() {
     });
   };
 
+  if (loading || !settings) {
+    return <div className="p-6">Loading...</div>;
+  }
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -86,7 +136,7 @@ export default function Settings() {
             Customize your VoicePay experience
           </p>
         </div>
-        <Button onClick={handleSave} className="bg-gradient-success">
+        <Button onClick={handleSaveSettings} className="bg-gradient-success">
           <Save className="mr-2 h-4 w-4" />
           Save Changes
         </Button>
@@ -114,57 +164,57 @@ export default function Settings() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="firstName">First Name</Label>
-                  <Input 
+                  <Input
                     id="firstName"
-                    value={settings.firstName}
-                    onChange={(e) => setSettings({...settings, firstName: e.target.value})}
+                    value={settings.firstName || ''}
+                    onChange={(e) => setSettings({ ...settings, firstName: e.target.value })}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lastName">Last Name</Label>
-                  <Input 
+                  <Input
                     id="lastName"
-                    value={settings.lastName}
-                    onChange={(e) => setSettings({...settings, lastName: e.target.value})}
+                    value={settings.lastName || ''}
+                    onChange={(e) => setSettings({ ...settings, lastName: e.target.value })}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="businessName">Business Name</Label>
-                <Input 
+                <Input
                   id="businessName"
-                  value={settings.businessName}
-                  onChange={(e) => setSettings({...settings, businessName: e.target.value})}
+                  value={settings.businessName || ''}
+                  onChange={(e) => setSettings({ ...settings, businessName: e.target.value })}
                 />
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
-                  <Input 
+                  <Input
                     id="email"
                     type="email"
                     value={settings.email}
-                    onChange={(e) => setSettings({...settings, email: e.target.value})}
+                    disabled
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number</Label>
-                  <Input 
+                  <Input
                     id="phone"
-                    value={settings.phone}
-                    onChange={(e) => setSettings({...settings, phone: e.target.value})}
+                    value={settings.phone || ''}
+                    onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
                 <Label htmlFor="language">Primary Language</Label>
-                <select 
+                <select
                   id="language"
-                  value={settings.primaryLanguage}
-                  onChange={(e) => setSettings({...settings, primaryLanguage: e.target.value})}
+                  value={settings.language || "hindi"}
+                  onChange={(e) => setSettings({ ...settings, language: e.target.value })}
                   className="w-full px-3 py-2 border border-input rounded-md bg-background"
                 >
                   {languages.map((lang) => (
@@ -174,6 +224,10 @@ export default function Settings() {
                   ))}
                 </select>
               </div>
+
+              <Button onClick={handleSaveProfile} className="mt-4">
+                Save Profile
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
@@ -197,8 +251,8 @@ export default function Settings() {
                 </div>
                 <Switch
                   checked={settings.voiceNotifications}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, voiceNotifications: checked})
+                  onCheckedChange={(checked) =>
+                    setSettings({ ...settings, voiceNotifications: checked })
                   }
                 />
               </div>
@@ -214,8 +268,8 @@ export default function Settings() {
                 </div>
                 <Switch
                   checked={settings.autoRecord}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, autoRecord: checked})
+                  onCheckedChange={(checked) =>
+                    setSettings({ ...settings, autoRecord: checked })
                   }
                 />
               </div>
@@ -224,9 +278,9 @@ export default function Settings() {
 
               <div className="space-y-2">
                 <Label>Voice Accuracy Level</Label>
-                <select 
-                  value={settings.voiceAccuracy}
-                  onChange={(e) => setSettings({...settings, voiceAccuracy: e.target.value})}
+                <select
+                  value={settings.voiceAccuracy || "balanced"}
+                  onChange={(e) => setSettings({ ...settings, voiceAccuracy: e.target.value })}
                   className="w-full px-3 py-2 border border-input rounded-md bg-background"
                 >
                   <option value="balanced">Balanced (Recommended)</option>
@@ -240,34 +294,6 @@ export default function Settings() {
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Recalibrate Voice Recognition
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Voice Commands Guide</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 text-sm">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <strong>Hindi Examples:</strong>
-                    <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
-                      <li>"50 रुपये दूध खरीदी"</li>
-                      <li>"100 रुपये की चाय बेची"</li>
-                      <li>"200 रुपये सब्जी खरीदी"</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <strong>English Examples:</strong>
-                    <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
-                      <li>"Sold 3 cold drinks for 90 rupees"</li>
-                      <li>"Bought groceries for 150 rupees"</li>
-                      <li>"Received payment 500 rupees"</li>
-                    </ul>
-                  </div>
-                </div>
               </div>
             </CardContent>
           </Card>
@@ -292,8 +318,8 @@ export default function Settings() {
                 </div>
                 <Switch
                   checked={settings.dailyReminders}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, dailyReminders: checked})
+                  onCheckedChange={(checked) =>
+                    setSettings({ ...settings, dailyReminders: checked })
                   }
                 />
               </div>
@@ -309,8 +335,8 @@ export default function Settings() {
                 </div>
                 <Switch
                   checked={settings.lowStockAlerts}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, lowStockAlerts: checked})
+                  onCheckedChange={(checked) =>
+                    setSettings({ ...settings, lowStockAlerts: checked })
                   }
                 />
               </div>
@@ -326,8 +352,8 @@ export default function Settings() {
                 </div>
                 <Switch
                   checked={settings.profitAlerts}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, profitAlerts: checked})
+                  onCheckedChange={(checked) =>
+                    setSettings({ ...settings, profitAlerts: checked })
                   }
                 />
               </div>
@@ -343,8 +369,8 @@ export default function Settings() {
                 </div>
                 <Switch
                   checked={settings.emailReports}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, emailReports: checked})
+                  onCheckedChange={(checked) =>
+                    setSettings({ ...settings, emailReports: checked })
                   }
                 />
               </div>
@@ -371,8 +397,8 @@ export default function Settings() {
                 </div>
                 <Switch
                   checked={settings.dataSync}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, dataSync: checked})
+                  onCheckedChange={(checked) =>
+                    setSettings({ ...settings, dataSync: checked })
                   }
                 />
               </div>
@@ -388,8 +414,8 @@ export default function Settings() {
                 </div>
                 <Switch
                   checked={settings.analyticsSharing}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, analyticsSharing: checked})
+                  onCheckedChange={(checked) =>
+                    setSettings({ ...settings, analyticsSharing: checked })
                   }
                 />
               </div>
@@ -405,8 +431,8 @@ export default function Settings() {
                 </div>
                 <Switch
                   checked={settings.locationAccess}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, locationAccess: checked})
+                  onCheckedChange={(checked) =>
+                    setSettings({ ...settings, locationAccess: checked })
                   }
                 />
               </div>
@@ -494,16 +520,16 @@ export default function Settings() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                 <div>
-                  <div className="text-2xl font-bold text-primary">2.4 MB</div>
-                  <div className="text-sm text-muted-foreground">Transactions</div>
+                  <div className="text-2xl font-bold text-primary">Real Data</div>
+                  <div className="text-sm text-muted-foreground">From Database</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-secondary">1.8 MB</div>
-                  <div className="text-sm text-muted-foreground">Voice Data</div>
+                  <div className="text-2xl font-bold text-secondary">SQLite</div>
+                  <div className="text-sm text-muted-foreground">Local Storage</div>
                 </div>
                 <div>
-                  <div className="text-2xl font-bold text-warning">4.2 MB</div>
-                  <div className="text-sm text-muted-foreground">Total Used</div>
+                  <div className="text-2xl font-bold text-warning">Active</div>
+                  <div className="text-sm text-muted-foreground">Status</div>
                 </div>
               </div>
             </CardContent>

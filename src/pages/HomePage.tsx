@@ -2,13 +2,13 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Mic, 
-  Wallet, 
-  ArrowRight, 
-  Globe, 
-  BarChart3, 
-  Shield, 
+import {
+  Mic,
+  Wallet,
+  ArrowRight,
+  Globe,
+  BarChart3,
+  Shield,
   Smartphone,
   CheckCircle,
   Star,
@@ -57,35 +57,13 @@ export function HomePage() {
     }
   ];
 
-  const testimonials = [
-    {
-      name: "राम शर्मा",
-      business: "Grocery Store Owner",
-      rating: 5,
-      comment: "VoicePay ने मेरे व्यापार को बहुत आसान बना दिया है। अब मैं हिंदी में बोलकर सब कुछ रिकॉर्ड कर सकता हूं।",
-      commentEn: "VoicePay has made my business so much easier. Now I can record everything by speaking in Hindi."
-    },
-    {
-      name: "Priya Patel",
-      business: "Tea Stall Owner",
-      rating: 5,
-      comment: "The voice recognition is amazing! It understands my Gujarati-Hindi mix perfectly.",
-      commentHi: "वॉयस रिकग्निशन बहुत बेहतरीन है! यह मेरी गुजराती-हिंदी मिश्रण को बिल्कुल सही समझता है।"
-    },
-    {
-      name: "अजय महाजन",
-      business: "Mobile Shop",
-      rating: 5,
-      comment: "पहले मुझे हिसाब-किताब रखना मुश्किल लगता था। अब VoicePay के साथ सब कुछ automatic है।",
-      commentEn: "Earlier I found it difficult to keep accounts. Now with VoicePay everything is automatic."
-    }
-  ];
+  const testimonials: any[] = [];
 
   const stats = [
-    { number: "10,000+", label: "Active Users", labelHindi: "सक्रिय उपयोगकर्ता" },
-    { number: "94%", label: "Voice Accuracy", labelHindi: "आवाज़ की सटीकता" },
-    { number: "15+", label: "Languages", labelHindi: "भाषाएं" },
-    { number: "₹50L+", label: "Transactions Tracked", labelHindi: "ट्रैक किए गए लेन-देन" }
+    { number: "0", label: "Active Users", labelHindi: "सक्रिय उपयोगकर्ता" },
+    { number: "0%", label: "Voice Accuracy", labelHindi: "आवाज़ की सटीकता" },
+    { number: "0", label: "Languages", labelHindi: "भाषाएं" },
+    { number: "₹0", label: "Transactions Tracked", labelHindi: "ट्रैक किए गए लेन-देन" }
   ];
 
   return (
@@ -104,7 +82,7 @@ export function HomePage() {
               <p className="text-xs text-muted-foreground">Smart Business Tracker</p>
             </div>
           </div>
-          
+
           <div className="flex items-center gap-3">
             <Button variant="ghost" onClick={() => navigate('/login')}>
               Sign In
@@ -140,8 +118,8 @@ export function HomePage() {
           </div>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               onClick={() => navigate('/login')}
               className="bg-gradient-primary text-lg px-8 py-6"
             >
@@ -181,11 +159,10 @@ export function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, index) => (
-              <Card 
-                key={index} 
-                className={`shadow-card hover:shadow-lg transition-all cursor-pointer group ${
-                  activeFeature === index ? 'ring-2 ring-primary' : ''
-                }`}
+              <Card
+                key={index}
+                className={`shadow-card hover:shadow-lg transition-all cursor-pointer group ${activeFeature === index ? 'ring-2 ring-primary' : ''
+                  }`}
                 onMouseEnter={() => setActiveFeature(index)}
               >
                 <CardContent className="p-6 text-center">
@@ -255,8 +232,8 @@ export function HomePage() {
             Join thousands of small business owners who are already using VoicePay to streamline their financial management.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               variant="secondary"
               onClick={() => navigate('/login')}
               className="text-lg px-8 py-6"
@@ -286,7 +263,7 @@ export function HomePage() {
                 Voice-enabled business expense tracking for Indian small businesses.
               </p>
             </div>
-            
+
             <div>
               <h3 className="font-semibold mb-4">Product</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
@@ -296,7 +273,7 @@ export function HomePage() {
                 <li>Integrations</li>
               </ul>
             </div>
-            
+
             <div>
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
@@ -306,7 +283,7 @@ export function HomePage() {
                 <li>Community</li>
               </ul>
             </div>
-            
+
             <div>
               <h3 className="font-semibold mb-4">Company</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
@@ -317,7 +294,7 @@ export function HomePage() {
               </ul>
             </div>
           </div>
-          
+
           <div className="border-t mt-8 pt-8 text-center text-sm text-muted-foreground">
             <p>&copy; 2024 VoicePay. All rights reserved. Made with ❤️ for Indian businesses.</p>
           </div>

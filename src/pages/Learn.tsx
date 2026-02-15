@@ -2,12 +2,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  BookOpen, 
-  Play, 
-  ExternalLink, 
-  Star, 
-  Clock, 
+import {
+  BookOpen,
+  Play,
+  ExternalLink,
+  Star,
+  Clock,
   Users,
   TrendingUp,
   PiggyBank,
@@ -20,56 +20,30 @@ import {
 export default function Learn() {
   const courses = [
     {
-      id: 1,
+      id: "finance-101",
       title: "Small Business Financial Management",
-      titleHindi: "छोटे व्यापार की वित्तीय प्रबंधन",
-      description: "Master the basics of managing finances for your small business",
+      titleHindi: "लघु व्यवसाय वित्तीय प्रबंधन",
+      description: "Master the basics of cash flow, profit & loss, and basic bookkeeping for your kirana or retail shop.",
       level: "Beginner",
-      duration: "45 mins",
+      duration: "2h 30m",
       lessons: 8,
       rating: 4.8,
-      language: "Hindi + English",
-      category: "Finance Basics",
-      color: "bg-success/10 text-success border-success/20"
+      language: "Hindi/English",
+      category: "Finance",
+      color: "border-primary/20 bg-primary/5"
     },
     {
-      id: 2,
-      title: "Profit & Loss Understanding",
-      titleHindi: "लाभ-हानि की समझ",
-      description: "Learn how to calculate and improve your business profitability",
-      level: "Intermediate", 
-      duration: "30 mins",
-      lessons: 5,
-      rating: 4.9,
-      language: "Marathi + Hindi",
-      category: "Analytics",
-      color: "bg-primary/10 text-primary border-primary/20"
-    },
-    {
-      id: 3,
-      title: "GST & Tax Planning",
-      titleHindi: "जीएसटी और कर नियोजन",
-      description: "Navigate GST requirements and optimize your tax planning",
-      level: "Advanced",
-      duration: "60 mins", 
+      id: "digital-growth",
+      title: "Digital Growth for Retailers",
+      titleHindi: "खुदरा विक्रेताओं के लिए डिजिटल विकास",
+      description: "Learn how to use digital tools and social media to attract more customers to your brick-and-mortar store.",
+      level: "Intermediate",
+      duration: "3h 45m",
       lessons: 12,
-      rating: 4.7,
-      language: "English + Hindi",
-      category: "Legal & Tax",
-      color: "bg-warning/10 text-warning border-warning/20"
-    },
-    {
-      id: 4,
-      title: "Digital Payment Solutions",
-      titleHindi: "डिजिटल भुगतान समाधान",
-      description: "Understand and implement digital payment systems",
-      level: "Beginner",
-      duration: "25 mins",
-      lessons: 4,
-      rating: 4.6,
-      language: "Hindi",
-      category: "Technology",
-      color: "bg-info/10 text-info border-info/20"
+      rating: 4.9,
+      language: "Hindi/Marathi",
+      category: "Marketing",
+      color: "border-success/20 bg-success/5"
     }
   ];
 
@@ -86,7 +60,7 @@ export default function Learn() {
         },
         {
           title: "Check Daily Summary",
-          titleHindi: "दैनिक सारांश देखें", 
+          titleHindi: "दैनिक सारांश देखें",
           content: "Review your daily profit/loss before closing. Identify patterns and opportunities.",
           contentHindi: "दुकान बंद करने से पहले दैनिक लाभ-हानि की समीक्षा करें।"
         }
@@ -123,7 +97,7 @@ export default function Learn() {
     {
       title: "Reading Your Financial Dashboard",
       titleHindi: "अपना वित्तीय डैशबोर्ड पढ़ना",
-      duration: "12:15", 
+      duration: "12:15",
       views: "1.8K",
       category: "Analytics"
     },
@@ -176,13 +150,12 @@ export default function Learn() {
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {achievements.map((achievement, index) => (
-              <div 
-                key={index} 
-                className={`p-3 rounded-lg text-center border-2 transition-all ${
-                  achievement.earned 
-                    ? 'bg-success/10 border-success/20 text-success' 
-                    : 'bg-muted/50 border-muted text-muted-foreground'
-                }`}
+              <div
+                key={index}
+                className={`p-3 rounded-lg text-center border-2 transition-all ${achievement.earned
+                  ? 'bg-success/10 border-success/20 text-success'
+                  : 'bg-muted/50 border-muted text-muted-foreground'
+                  }`}
               >
                 <achievement.icon className="h-8 w-8 mx-auto mb-2" />
                 <p className="text-sm font-medium">{achievement.name}</p>
@@ -230,7 +203,7 @@ export default function Learn() {
                         {course.rating}
                       </div>
                     </div>
-                    
+
                     <div className="flex items-center justify-between">
                       <div>
                         <Badge variant="outline" className="mr-2">{course.language}</Badge>
@@ -277,10 +250,10 @@ export default function Learn() {
                   <div className="aspect-video bg-muted rounded-lg mb-3 flex items-center justify-center group-hover:bg-muted/80 transition-colors">
                     <Play className="h-12 w-12 text-muted-foreground group-hover:text-primary transition-colors" />
                   </div>
-                  
+
                   <h3 className="font-medium mb-1 line-clamp-2">{video.title}</h3>
                   <p className="text-sm text-muted-foreground mb-2">{video.titleHindi}</p>
-                  
+
                   <div className="flex items-center justify-between text-sm text-muted-foreground">
                     <span>{video.duration}</span>
                     <div className="flex items-center gap-1">
@@ -288,7 +261,7 @@ export default function Learn() {
                       {video.views}
                     </div>
                   </div>
-                  
+
                   <Badge variant="outline" className="mt-2">{video.category}</Badge>
                 </CardContent>
               </Card>
@@ -336,7 +309,7 @@ export default function Learn() {
                   <ExternalLink className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" className="w-full justify-between">
-                  GST Registration Guide  
+                  GST Registration Guide
                   <ExternalLink className="h-4 w-4" />
                 </Button>
                 <Button variant="outline" className="w-full justify-between">

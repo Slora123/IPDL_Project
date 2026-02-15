@@ -25,11 +25,15 @@
     "baseUrl": ".",
     "paths": {
       "@prisma/client": [
-        "node_modules/@prisma/client"
+        "node_modules/@prisma/client",
+        "node_modules/.prisma/client"
       ]
     }
   },
   "exclude": [
-    "prisma.config.ts"
+    "prisma.config.ts",
+    "check_db.ts",
+    "test_endpoint.ts",
+    "*.test.ts"
   ]
 }

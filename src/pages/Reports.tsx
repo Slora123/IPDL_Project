@@ -1,103 +1,77 @@
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Download, 
-  FileText, 
-  PieChart, 
-  BarChart3, 
+import {
+  Download,
+  FileText,
+  PieChart,
+  BarChart3,
   TrendingUp,
   Calendar,
   Filter,
-  Share,
-  Eye,
-  Clock
+  Loader2
 } from "lucide-react";
+import axios from "axios";
+import { useToast } from "@/hooks/use-toast";
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export default function Reports() {
-  const reports = [
-    {
-      id: 1,
-      title: "Monthly P&L Statement",
-      description: "Comprehensive profit and loss analysis for January 2024",
-      type: "Financial",
-      status: "Ready",
-      date: "2024-01-31",
-      size: "2.4 MB",
-      format: "PDF",
-      color: "bg-success/10 text-success border-success/20"
-    },
-    {
-      id: 2, 
-      title: "Category Performance Report",
-      description: "Detailed breakdown of revenue by business category",
-      type: "Analytics",
-      status: "Ready",
-      date: "2024-01-30",
-      size: "1.8 MB", 
-      format: "Excel",
-      color: "bg-primary/10 text-primary border-primary/20"
-    },
-    {
-      id: 3,
-      title: "Voice Transaction Analysis",
-      description: "Analysis of voice-recorded transactions and accuracy metrics",
-      type: "Voice Data",
-      status: "Processing",
-      date: "2024-01-29",
-      size: "3.1 MB",
-      format: "PDF",
-      color: "bg-warning/10 text-warning border-warning/20"
-    },
-    {
-      id: 4,
-      title: "Tax Preparation Summary",
-      description: "GST and income tax ready financial summary",
-      type: "Tax",
-      status: "Ready",
-      date: "2024-01-28",
-      size: "1.2 MB",
-      format: "PDF", 
-      color: "bg-info/10 text-info border-info/20"
-    },
-    {
-      id: 5,
-      title: "Customer Insights Report",
-      description: "Peak hours, popular items, and customer behavior patterns",
-      type: "Business Intelligence",
-      status: "Ready", 
-      date: "2024-01-27",
-      size: "2.7 MB",
-      format: "PDF",
-      color: "bg-secondary/10 text-secondary border-secondary/20"
-    },
-    {
-      id: 6,
-      title: "Inventory Turnover Analysis",
-      description: "Stock movement and inventory optimization recommendations",
-      type: "Operations",
-      status: "Scheduled",
-      date: "2024-02-01",
-      size: "N/A",
-      format: "Excel",
-      color: "bg-muted text-muted-foreground border-muted"
-    }
-  ];
+  const [loading, setLoading] = useState<string | null>(null);
+  const [generatedReport, setGeneratedReport] = useState<any>(null);
+  const { toast } = useToast();
 
   const quickReports = [
-    { name: "Today's Summary", icon: Calendar, description: "Quick overview of today's transactions" },
-    { name: "Weekly P&L", icon: TrendingUp, description: "7-day profit and loss summary" },
-    { name: "Category Breakdown", icon: PieChart, description: "Current month category analysis" },
-    { name: "Voice Accuracy", icon: BarChart3, description: "Voice recognition accuracy report" }
+    { id: "today-summary", name: "Today's Summary", icon: Calendar, description: "Quick overview of today's transactions" },
+    { id: "weekly-pl", name: "Weekly P&L", icon: TrendingUp, description: "7-day profit and loss summary" },
+    { id: "category-breakdown", name: "Category Breakdown", icon: PieChart, description: "Current month category analysis" },
+    { id: "voice-accuracy", name: "Voice Accuracy", icon: BarChart3, description: "Voice recognition accuracy report" }
   ];
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Ready": return "bg-success text-success-foreground";
-      case "Processing": return "bg-warning text-warning-foreground";
-      case "Scheduled": return "bg-muted text-muted-foreground";
-      default: return "bg-secondary text-secondary-foreground";
+  const generateReport = async (reportId: string) => {
+    setLoading(reportId);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `${API_URL}/api/reports/generate/${reportId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setGeneratedReport(response.data);
+      toast({
+        title: "Report Generated!",
+        description: `${response.data.reportName} has been created successfully.`,
+      });
+    } catch (error: any) {
+      console.error('Error generating report:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.response?.data?.error || "Failed to generate report",
+      });
+    } finally {
+      setLoading(null);
     }
+  };
+
+  const downloadReport = () => {
+    if (!generatedReport) return;
+
+    const dataStr = JSON.stringify(generatedReport, null, 2);
+    const dataBlob = new Blob([dataStr], { type: 'application/json' });
+    const url = URL.createObjectURL(dataBlob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${generatedReport.reportName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Downloaded!",
+      description: `Report saved successfully.`,
+    });
   };
 
   return (
@@ -110,14 +84,12 @@ export default function Reports() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Filter className="mr-2 h-4 w-4" />
-            Filter Reports
-          </Button>
-          <Button size="sm" className="bg-gradient-primary">
-            <FileText className="mr-2 h-4 w-4" />
-            New Report
-          </Button>
+          {generatedReport && (
+            <Button size="sm" onClick={downloadReport}>
+              <Download className="mr-2 h-4 w-4" />
+              Download Report
+            </Button>
+          )}
         </div>
       </div>
 
@@ -125,16 +97,29 @@ export default function Reports() {
       <div className="space-y-4">
         <h2 className="text-xl font-semibold">Quick Reports</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {quickReports.map((report, index) => (
-            <Card key={index} className="shadow-card hover:shadow-lg transition-all cursor-pointer group">
+          {quickReports.map((report) => (
+            <Card key={report.id} className="shadow-card hover:shadow-lg transition-all cursor-pointer group">
               <CardContent className="p-4 text-center">
                 <div className="h-12 w-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:bg-primary/20 transition-colors">
                   <report.icon className="h-6 w-6 text-primary" />
                 </div>
                 <h3 className="font-medium mb-1">{report.name}</h3>
                 <p className="text-sm text-muted-foreground">{report.description}</p>
-                <Button size="sm" variant="outline" className="mt-3 w-full">
-                  Generate
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="mt-3 w-full"
+                  onClick={() => generateReport(report.id)}
+                  disabled={loading === report.id}
+                >
+                  {loading === report.id ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    "Generate"
+                  )}
                 </Button>
               </CardContent>
             </Card>
@@ -142,131 +127,74 @@ export default function Reports() {
         </div>
       </div>
 
-      {/* Generated Reports */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold">Generated Reports</h2>
-          <Badge variant="secondary">{reports.length} reports</Badge>
-        </div>
-        
-        <div className="space-y-3">
-          {reports.map((report) => (
-            <Card key={report.id} className={`shadow-card border-2 ${report.color}`}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold">{report.title}</h3>
-                      <Badge className={getStatusColor(report.status)}>
-                        {report.status}
-                      </Badge>
-                      <Badge variant="outline" className="text-xs">
-                        {report.format}
-                      </Badge>
-                    </div>
-                    
-                    <p className="text-muted-foreground mb-3">{report.description}</p>
-                    
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {new Date(report.date).toLocaleDateString()}
-                      </div>
-                      <span>{report.size}</span>
-                      <span className="font-medium text-foreground">{report.type}</span>
-                    </div>
+      {/* Generated Report Display */}
+      {generatedReport && (
+        <Card className="shadow-card border-2 border-primary">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>{generatedReport.reportName}</span>
+              <Badge className="bg-success text-success-foreground">Ready</Badge>
+            </CardTitle>
+            <CardDescription>
+              {generatedReport.period || generatedReport.date || "Generated just now"}
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {/* Display report summary */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {generatedReport.totalIncome !== undefined && (
+                  <div className="text-center p-3 bg-success/10 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Total Income</p>
+                    <p className="text-2xl font-bold text-success">₹{generatedReport.totalIncome.toLocaleString()}</p>
                   </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <Button size="sm" variant="outline">
-                      <Eye className="mr-2 h-4 w-4" />
-                      Preview
-                    </Button>
-                    <Button size="sm" variant="outline">
-                      <Share className="mr-2 h-4 w-4" />
-                      Share
-                    </Button>
-                    <Button 
-                      size="sm" 
-                      className="bg-gradient-success"
-                      disabled={report.status !== "Ready"}
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download
-                    </Button>
+                )}
+                {generatedReport.totalExpenses !== undefined && (
+                  <div className="text-center p-3 bg-destructive/10 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Total Expenses</p>
+                    <p className="text-2xl font-bold text-destructive">₹{generatedReport.totalExpenses.toLocaleString()}</p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
+                )}
+                {generatedReport.netProfit !== undefined && (
+                  <div className="text-center p-3 bg-primary/10 rounded-lg">
+                    <p className="text-sm text-muted-foreground">Net Profit</p>
+                    <p className="text-2xl font-bold">₹{generatedReport.netProfit.toLocaleString()}</p>
+                  </div>
+                )}
+                {generatedReport.totalTransactions !== undefined && (
+                  <div className="text-center p-3 bg-muted rounded-lg">
+                    <p className="text-sm text-muted-foreground">Transactions</p>
+                    <p className="text-2xl font-bold">{generatedReport.totalTransactions}</p>
+                  </div>
+                )}
+              </div>
 
-      {/* Report Templates */}
-      <Card className="shadow-card">
-        <CardHeader>
-          <CardTitle>Custom Report Builder</CardTitle>
-          <CardDescription>
-            Create customized reports based on your specific needs
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 border border-border rounded-lg">
-              <h3 className="font-medium mb-2">Financial Reports</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                P&L statements, cash flow, balance sheets
-              </p>
-              <Button size="sm" variant="outline" className="w-full">
-                Create Financial Report
-              </Button>
+              {/* Show raw data in expandable section */}
+              <details className="mt-4">
+                <summary className="cursor-pointer font-medium text-sm text-muted-foreground hover:text-foreground">
+                  View Detailed Data
+                </summary>
+                <pre className="mt-2 p-4 bg-muted rounded-lg text-xs overflow-auto max-h-96">
+                  {JSON.stringify(generatedReport, null, 2)}
+                </pre>
+              </details>
             </div>
-            
-            <div className="p-4 border border-border rounded-lg">
-              <h3 className="font-medium mb-2">Analytics Reports</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                Performance metrics, trends, forecasting
-              </p>
-              <Button size="sm" variant="outline" className="w-full">
-                Create Analytics Report
-              </Button>
-            </div>
-            
-            <div className="p-4 border border-border rounded-lg">
-              <h3 className="font-medium mb-2">Tax Reports</h3>
-              <p className="text-sm text-muted-foreground mb-3">
-                GST returns, income tax summaries
-              </p>
-              <Button size="sm" variant="outline" className="w-full">
-                Create Tax Report
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
-      {/* Report Insights */}
-      <Card className="shadow-card bg-gradient-card">
-        <CardHeader>
-          <CardTitle>📊 Report Insights</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-medium mb-2 text-success">Strong Performance</h4>
-              <p className="text-sm text-muted-foreground">
-                Your monthly reports show consistent 18% growth in net profit margins.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2 text-info">Voice Accuracy</h4>
-              <p className="text-sm text-muted-foreground">
-                Voice transaction accuracy has improved to 94% with the latest language model updates.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Empty state */}
+      {!generatedReport && (
+        <Card className="shadow-card">
+          <CardContent className="p-12 text-center">
+            <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">No Reports Generated Yet</h3>
+            <p className="text-muted-foreground">
+              Click "Generate" on any quick report above to create your first report
+            </p>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -28,15 +28,15 @@ export const OnboardingDialog: React.FC<OnboardingDialogProps> = ({ open, onClos
 
   return (
     <Dialog open={open}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md bg-white text-black border-2 border-black/10 shadow-xl">
         <DialogHeader>
-          <DialogTitle>{t("app_title")}</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-center text-black">{t("app_title")}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
-            <Label htmlFor="language">{t("language")}</Label>
+            <Label htmlFor="language" className="text-black font-medium">{t("language")}</Label>
             <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-              <SelectTrigger id="language">
+              <SelectTrigger id="language" className="bg-white border-gray-300 text-black">
                 <SelectValue placeholder={t("language")} />
               </SelectTrigger>
               <SelectContent>
@@ -46,9 +46,9 @@ export const OnboardingDialog: React.FC<OnboardingDialogProps> = ({ open, onClos
             </Select>
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="persona">{t("persona")}</Label>
+            <Label htmlFor="persona" className="text-black font-medium">{t("persona")}</Label>
             <Select value={selectedPersona} onValueChange={(v) => setSelectedPersona(v as PersonaType)}>
-              <SelectTrigger id="persona">
+              <SelectTrigger id="persona" className="bg-white border-gray-300 text-black">
                 <SelectValue placeholder={t("persona")} />
               </SelectTrigger>
               <SelectContent>
