@@ -101,6 +101,3 @@ DevFusion is a next-generation financial management application designed to empo
 └── public/             # Static assets
 ```
 
-## 📝 License
-
-Distributed under the ISC License.
