@@ -1,6 +1,6 @@
 # Trackify: AI-Powered Financial Freedom 🚀
 
-DevFusion is a next-generation financial management application designed to empower users—especially business owners and individuals in multilingual environments—with AI-driven insights, voice-activated transactions, and personalized educational content.
+Trackify is a next-generation financial management application designed to empower users—especially business owners and individuals in multilingual environments—with AI-driven insights, voice-activated transactions, and personalized educational content.
 
 ## 🌟 Key Features
 
