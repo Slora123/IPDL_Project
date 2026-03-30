@@ -108,13 +108,18 @@ export function LoginPage() {
             <div className="space-y-4">
               <div className="flex justify-center">
                 <GoogleLogin
-                  onSuccess={(credentialResponse) => {
-                    if (credentialResponse.credential) {
-                      login(credentialResponse.credential);
+                  onSuccess={async (credentialResponse) => {
+                    try {
+                      if (credentialResponse.credential) {
+                        await login(credentialResponse.credential);
+                        setError("");
+                      }
+                    } catch (err: any) {
+                       setError(err.response?.data?.error || err.message || "Failed to authenticate with server. Check console.");
                     }
                   }}
                   onError={() => {
-                    setError("Login Failed");
+                    setError("Google Popup Failed. Check browser console.");
                   }}
                   useOneTap
                 />

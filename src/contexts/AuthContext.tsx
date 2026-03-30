@@ -66,8 +66,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem('user', JSON.stringify(userData))
       localStorage.setItem('token', newToken)
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`
-    } catch (error) {
-      console.error('Google login error:', error)
+    } catch (error: any) {
+      console.error('Google login error stack:', error)
+      const errorMessage = error.response?.data?.error || error.message || 'Unknown login error';
+      alert(`Login Failed! backend said: ${errorMessage}\n\nDetails: ` + JSON.stringify(error.response?.data || {}, null, 2));
+      throw error;
     } finally {
       setLoading(false)
     }
