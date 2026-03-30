@@ -9,9 +9,9 @@ import { promisify } from 'util';
 // @ts-ignore
 import { PrismaClient } from '@prisma/client';
 // @ts-ignore
-import { verifyGoogleToken, generateToken, authenticateToken } from './auth.js';
+import { verifyGoogleToken, generateToken, authenticateToken } from './auth';
 // @ts-ignore
-import { classifyVoiceTransaction } from './voice.js';
+import { classifyVoiceTransaction } from './voice';
 
 const execPromise = promisify(exec);
 
@@ -20,8 +20,10 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Configure multer for audio uploads
+const uploadDir = process.env.VERCEL ? '/tmp/uploads' : 'uploads';
+
 const upload = multer({
-    dest: 'uploads/',
+    dest: uploadDir,
     limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
     fileFilter: (req, file, cb) => {
         const allowedTypes = ['audio/webm', 'audio/wav', 'audio/mp3', 'audio/ogg', 'audio/mpeg'];
@@ -34,8 +36,8 @@ const upload = multer({
 });
 
 // Ensure uploads directory exists
-if (!fs.existsSync('uploads')) {
-    fs.mkdirSync('uploads');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
 }
 
 app.use(cors());
