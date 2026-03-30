@@ -64,7 +64,7 @@ export default function Transactions() {
 
     try {
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/transactions`,
+        `${""}/api/transactions`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }
@@ -87,7 +87,7 @@ export default function Transactions() {
 
     try {
       await axios.delete(
-        `${import.meta.env.VITE_API_URL}/api/transactions/${id}`,
+        `${""}/api/transactions/${id}`,
         {
           headers: { Authorization: `Bearer ${token}` }
         }

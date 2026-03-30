@@ -18,7 +18,7 @@ import { CategoryChart } from "@/components/charts/CategoryChart";
 import axios from "axios";
 import { useAuth } from "@/contexts/AuthContext";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = "" || 'http://localhost:3000';
 
 export default function Analytics() {
   const [loading, setLoading] = useState(true);

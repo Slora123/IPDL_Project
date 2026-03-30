@@ -30,7 +30,7 @@ export default function GrowthInsights() {
 
             try {
                 setLoading(true);
-                const response = await axios.get(`${import.meta.env.VITE_API_URL}/api/analytics/growth`, {
+                const response = await axios.get(`${""}/api/analytics/growth`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
 

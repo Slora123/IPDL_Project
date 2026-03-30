@@ -77,7 +77,7 @@ export function EditTransactionDialog({
             console.log("Updating transaction:", { ...formData, amount: parseFloat(formData.amount) });
 
             const response = await axios.put(
-                `${import.meta.env.VITE_API_URL}/api/transactions/${transaction.id}`,
+                `${""}/api/transactions/${transaction.id}`,
                 {
                     ...formData,
                     amount: parseFloat(formData.amount),

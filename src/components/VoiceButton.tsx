@@ -153,7 +153,7 @@ export function VoiceButton() {
 
       // Send to backend
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/voice/process`,
+        `${""}/api/voice/process`,
         formData,
         {
           headers: {

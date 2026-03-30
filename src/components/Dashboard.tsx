@@ -44,16 +44,16 @@ export function Dashboard() {
       setLoading(true);
       try {
         const [statsRes, weeklyRes, categoryRes, growthRes] = await Promise.all([
-          axios.get(`${import.meta.env.VITE_API_URL}/api/stats`, {
+          axios.get(`${""}/api/stats`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/analytics/weekly-stats`, {
+          axios.get(`${""}/api/analytics/weekly-stats`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/analytics/spending`, {
+          axios.get(`${""}/api/analytics/spending`, {
             headers: { Authorization: `Bearer ${token}` }
           }),
-          axios.get(`${import.meta.env.VITE_API_URL}/api/analytics/growth`, {
+          axios.get(`${""}/api/analytics/growth`, {
             headers: { Authorization: `Bearer ${token}` }
           })
         ]);

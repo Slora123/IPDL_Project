@@ -21,7 +21,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_URL = "" || 'http://localhost:3000';
 
 export default function Settings() {
   const [settings, setSettings] = useState<any>(null);
