@@ -141,12 +141,12 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="voice">Voice</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="privacy">Privacy</TabsTrigger>
-          <TabsTrigger value="data">Data</TabsTrigger>
+        <TabsList className="flex flex-wrap h-auto w-full sm:grid sm:grid-cols-5 gap-1 sm:gap-0">
+          <TabsTrigger value="profile" className="flex-1 text-xs sm:text-sm">Profile</TabsTrigger>
+          <TabsTrigger value="voice" className="flex-1 text-xs sm:text-sm">Voice</TabsTrigger>
+          <TabsTrigger value="notifications" className="flex-1 text-xs sm:text-sm">Notifications</TabsTrigger>
+          <TabsTrigger value="privacy" className="flex-1 text-xs sm:text-sm">Privacy</TabsTrigger>
+          <TabsTrigger value="data" className="flex-1 text-xs sm:text-sm">Data</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-4">
