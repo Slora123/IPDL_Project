@@ -10,7 +10,6 @@ import {
 } from "@/components/ui/dialog";
 import { Mic, MicOff, Loader2, CheckCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { useAuth } from "@/contexts/AuthContext";
 import { usePreferences } from "@/contexts/PreferencesContext";
 import axios from "axios";
 
@@ -34,7 +33,6 @@ export function VoiceButton() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const { toast } = useToast();
-  const { token } = useAuth();
   const { language } = usePreferences();
 
   const startRecording = async () => {
@@ -157,7 +155,6 @@ export function VoiceButton() {
         formData,
         {
           headers: {
-            Authorization: `Bearer ${token}`,
             'Content-Type': 'multipart/form-data',
           },
         }

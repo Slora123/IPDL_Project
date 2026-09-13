@@ -30,6 +30,7 @@ import { VoiceButton } from "@/components/VoiceButton";
 import { ManualTransactionDialog } from "@/components/ManualTransactionDialog";
 import { EditTransactionDialog } from "@/components/EditTransactionDialog";
 import { useI18n } from "@/contexts/I18nContext";
+import { usePreferences } from "@/contexts/PreferencesContext";
 
 interface Transaction {
   id: string;
@@ -45,6 +46,8 @@ interface Transaction {
 
 export default function Transactions() {
   const { t } = useI18n();
+  const { language } = usePreferences();
+  const isEnglish = language === 'en';
   const [searchTerm, setSearchTerm] = useState("");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -60,7 +63,7 @@ export default function Transactions() {
 
   const fetchTransactions = async () => {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    // if (!token) return; // Removed so mock API works without login
 
     try {
       const response = await axios.get(
@@ -83,7 +86,7 @@ export default function Transactions() {
 
   const handleDelete = async (id: string) => {
     const token = localStorage.getItem('token');
-    if (!token) return;
+    // if (!token) return;
 
     try {
       await axios.delete(
@@ -157,53 +160,71 @@ export default function Transactions() {
   const TransactionCard = ({ transaction }: { transaction: Transaction }) => {
     const TypeIcon = getTypeIcon(transaction.type);
 
+    const getCategoryColor = (category: string) => {
+      switch (category.toLowerCase()) {
+        case 'food': return 'bg-orange-500/10 text-orange-500 hover:bg-orange-500/20';
+        case 'business': return 'bg-blue-500/10 text-blue-500 hover:bg-blue-500/20';
+        case 'supplies': return 'bg-purple-500/10 text-purple-500 hover:bg-purple-500/20';
+        case 'software': return 'bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500/20';
+        case 'services': return 'bg-pink-500/10 text-pink-500 hover:bg-pink-500/20';
+        default: return 'bg-primary/10 text-primary hover:bg-primary/20';
+      }
+    };
+
     return (
-      <Card className="shadow-card hover:shadow-lg transition-shadow">
+      <Card className={`shadow-card hover:shadow-lg transition-all duration-200 border-l-4 ${transaction.type === 'income' ? 'border-l-success' : 'border-l-destructive'}`}>
         <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-1">
-                <h3 className="font-medium">{transaction.item}</h3>
-                <Badge variant="outline" className="text-xs">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="flex-1 w-full">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="font-semibold text-lg">{transaction.item}</h3>
+                <Badge variant="outline" className="text-xs bg-background">
                   {getLanguageFlag(transaction.language)}
                 </Badge>
                 {transaction.voiceInput && (
-                  <Badge variant="secondary" className="text-xs">
-                    <Mic className="h-3 w-3 mr-1" />
+                  <Badge variant="secondary" className="text-xs bg-muted">
+                    <Mic className="h-3 w-3 mr-1 text-primary" />
                     {t('voice', 'dashboard')}
                   </Badge>
                 )}
               </div>
 
-              <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span>{transaction.category}</span>
-                <span>{transaction.time}</span>
+              <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
+                <Badge className={`border-none ${getCategoryColor(transaction.category)}`}>
+                  {transaction.category}
+                </Badge>
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3 w-3" />
+                  {transaction.time}
+                </span>
               </div>
 
               {transaction.voiceInput && (
-                <p className="text-xs text-muted-foreground mt-2 italic">
+                <p className="text-sm text-muted-foreground italic bg-muted/30 p-2 rounded-md border border-muted mt-2">
                   "{transaction.voiceInput}"
                 </p>
               )}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4 w-full md:w-auto justify-end">
               <div className="text-right">
-                <div className={`text-lg font-bold ${getTypeColor(transaction.type)}`}>
-                  {transaction.type === "income" ? "+" : "-"}₹{transaction.amount}
+                <div className={`text-xl font-bold ${getTypeColor(transaction.type)}`}>
+                  {transaction.type === "income" ? "+" : "-"}₹{transaction.amount.toLocaleString()}
                 </div>
-                <div className="text-xs text-muted-foreground capitalize">
+                <div className="text-xs text-muted-foreground capitalize font-medium">
                   {transaction.type === "income" ? t('income', 'dashboard') : t('expense', 'dashboard')}
                 </div>
               </div>
 
-              <TypeIcon className={`h-5 w-5 ${getTypeColor(transaction.type)}`} />
+              <div className={`p-2 rounded-full ${transaction.type === 'income' ? 'bg-success/10' : 'bg-destructive/10'}`}>
+                <TypeIcon className={`h-5 w-5 ${getTypeColor(transaction.type)}`} />
+              </div>
 
-              <div className="flex flex-col gap-1">
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0" onClick={() => handleEdit(transaction)}>
+              <div className="flex md:flex-col gap-1 border-l pl-3 ml-1">
+                <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-muted" onClick={() => handleEdit(transaction)}>
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button size="sm" variant="ghost" className="h-8 w-8 p-0 text-destructive hover:text-destructive" onClick={() => handleDelete(transaction.id)}>
+                <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => handleDelete(transaction.id)}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -435,18 +456,22 @@ export default function Transactions() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <strong>{t('hindi_example', 'dashboard')}</strong><br />
-              "50 रुपये दूध खरीदी" → Expense recorded
-            </div>
+            {!isEnglish && (
+              <div>
+                <strong>{t('hindi_example', 'dashboard')}</strong><br />
+                "50 रुपये दूध खरीदी" → Expense recorded
+              </div>
+            )}
             <div>
               <strong>{t('english_example', 'dashboard')}</strong><br />
               "Sold 3 cold drinks for 90 rupees each" → Income recorded
             </div>
-            <div>
-              <strong>{t('marathi_example', 'dashboard')}</strong><br />
-              "80 रुपयांची भाजी घेतली" → Expense recorded
-            </div>
+            {!isEnglish && (
+              <div>
+                <strong>{t('marathi_example', 'dashboard')}</strong><br />
+                "80 रुपयांची भाजी घेतली" → Expense recorded
+              </div>
+            )}
             <div>
               <strong>{t('best_practices', 'dashboard')}</strong><br />
               {t('best_practices_text', 'dashboard')}

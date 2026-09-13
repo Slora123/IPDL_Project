@@ -2,16 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { PreferencesProvider, usePreferences } from "@/contexts/PreferencesContext";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Layout } from "./pages/Layout";
-import { HomePage } from "./pages/HomePage";
-import { LoginPage } from "./pages/LoginPage";
 import Index from "./pages/Index";
 import Analytics from "./pages/Analytics";
 import Transactions from "./pages/Transactions";
@@ -23,90 +19,65 @@ import GrowthInsights from "./pages/GrowthInsights";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
 import NotFound from "./pages/NotFound";
-import { useAuth } from "@/contexts/AuthContext";
 
 const queryClient = new QueryClient();
 
 const AppContent = () => {
-  const { language, persona } = usePreferences();
-  const { user } = useAuth();
-  const location = useLocation();
-  const isLoginRoute = location.pathname === "/login";
-  const needsOnboarding = user && !isLoginRoute && (!language || !persona);
+  const { language, name, businessName, phone } = usePreferences();
+  const needsOnboarding = !language || !name || !businessName || !phone;
+
   return (
     <>
       <Routes>
-        <Route path="/home" element={<HomePage />} />
-        <Route path="/login" element={<LoginPage />} />
         <Route path="/" element={
-          <ProtectedRoute>
-            <Layout>
-              <Index />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <Index />
+          </Layout>
         } />
         <Route path="/analytics" element={
-          <ProtectedRoute>
-            <Layout>
-              <Analytics />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <Analytics />
+          </Layout>
         } />
         <Route path="/transactions" element={
-          <ProtectedRoute>
-            <Layout>
-              <Transactions />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <Transactions />
+          </Layout>
         } />
         <Route path="/reports" element={
-          <ProtectedRoute>
-            <Layout>
-              <Reports />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <Reports />
+          </Layout>
         } />
         <Route path="/spending" element={
-          <ProtectedRoute>
-            <Layout>
-              <Spending />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <Spending />
+          </Layout>
         } />
         <Route path="/loan-alert" element={
-          <ProtectedRoute>
-            <Layout>
-              <LoanAlert />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <LoanAlert />
+          </Layout>
         } />
         <Route path="/learn" element={
-          <ProtectedRoute>
-            <Layout>
-              <Learn />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <Learn />
+          </Layout>
         } />
         <Route path="/insights" element={
-          <ProtectedRoute>
-            <Layout>
-              <GrowthInsights />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <GrowthInsights />
+          </Layout>
         } />
         <Route path="/settings" element={
-          <ProtectedRoute>
-            <Layout>
-              <Settings />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <Settings />
+          </Layout>
         } />
         <Route path="/help" element={
-          <ProtectedRoute>
-            <Layout>
-              <Help />
-            </Layout>
-          </ProtectedRoute>
+          <Layout>
+            <Help />
+          </Layout>
         } />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
@@ -121,15 +92,13 @@ const App = () => (
     <PreferencesProvider>
       <I18nProvider>
         <ThemeProvider>
-          <AuthProvider>
-            <TooltipProvider>
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
-                <AppContent />
-              </BrowserRouter>
-            </TooltipProvider>
-          </AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
+          </TooltipProvider>
         </ThemeProvider>
       </I18nProvider>
     </PreferencesProvider>

@@ -18,6 +18,8 @@ export function StatsCard({
   variant = "default",
   className = "" 
 }: StatsCardProps) {
+  const isColoredBackground = className.includes("bg-gradient-success") || className.includes("bg-gradient-primary");
+
   const getVariantStyles = () => {
     switch (variant) {
       case "expense":
@@ -25,30 +27,36 @@ export function StatsCard({
       case "neutral":
         return "bg-muted/50 border-muted";
       default:
-        return "bg-gradient-card border-primary/20";
+        return className.includes("bg-gradient") ? "" : "bg-gradient-card border-primary/20";
     }
   };
 
   const getTrendColor = () => {
     if (!trend) return "";
+    if (isColoredBackground) return "text-white/90";
     return trend.startsWith('+') ? "text-success" : "text-destructive";
   };
+
+  const textColorClass = isColoredBackground ? "text-white" : "";
+  const titleColorClass = isColoredBackground ? "text-white/90" : "text-muted-foreground";
+  const iconColorClass = isColoredBackground ? "text-white/90" : "text-foreground/70";
+  const iconBgClass = isColoredBackground ? "bg-white/20" : "bg-background/50";
 
   return (
     <Card className={`shadow-card transition-smooth hover:shadow-lg hover:-translate-y-1 ${getVariantStyles()} ${className}`}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold">{value}</p>
+            <p className={`text-sm font-medium ${titleColorClass}`}>{title}</p>
+            <p className={`text-2xl font-bold ${textColorClass}`}>{value}</p>
             {trend && (
               <p className={`text-sm font-medium ${getTrendColor()}`}>
                 {trend} from yesterday
               </p>
             )}
           </div>
-          <div className="h-12 w-12 rounded-full bg-background/50 flex items-center justify-center">
-            <Icon className="h-6 w-6 text-foreground/70" />
+          <div className={`h-12 w-12 rounded-full ${iconBgClass} flex items-center justify-center`}>
+            <Icon className={`h-6 w-6 ${iconColorClass}`} />
           </div>
         </div>
       </CardContent>

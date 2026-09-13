@@ -2,10 +2,20 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   TrendingUp,
   TrendingDown,
-  Calendar,
+  Calendar as CalendarIcon,
   Download,
   Filter,
   BarChart3,
@@ -16,7 +26,9 @@ import { IncomeExpenseChart } from "@/components/charts/IncomeExpenseChart";
 import { ProfitLossChart } from "@/components/charts/ProfitLossChart";
 import { CategoryChart } from "@/components/charts/CategoryChart";
 import axios from "axios";
-import { useAuth } from "@/contexts/AuthContext";
+// @ts-ignore
+import html2pdf from "html2pdf.js";
+
 
 const API_URL = "" || 'http://localhost:3000';
 
@@ -31,58 +43,51 @@ export default function Analytics() {
     cost: "Loading insights...",
     growth: "Analyzing category trends..."
   });
-
-  const { token } = useAuth();
+  const [date, setDate] = useState<Date | undefined>(new Date());
+  const [filterActive, setFilterActive] = useState(true);
 
   useEffect(() => {
     fetchAnalytics();
-  }, [token]);
+  }, []);
 
   const fetchAnalytics = async () => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
 
     try {
 
       // Fetch all required analytics
       const [growthRes, spendingRes, weeklyRes] = await Promise.all([
-        axios.get(`${API_URL}/api/analytics/growth`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get(`${API_URL}/api/analytics/spending`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }),
-        axios.get(`${API_URL}/api/analytics/weekly-stats`, {
-          headers: { Authorization: `Bearer ${token}` }
-        })
+        axios.get(`${API_URL}/api/analytics/growth`),
+        axios.get(`${API_URL}/api/analytics/spending`),
+        axios.get(`${API_URL}/api/analytics/weekly-stats`)
       ]);
 
-      const growth = growthRes.data;
+      const growth = growthRes.data || {};
+      const revGrowthStr = growth.revenueGrowth || "0%";
+      const profitMarginStr = growth.profitMargin || "0%";
       setPerformanceMetrics([
-        { label: "Revenue Growth", value: growth.revenueGrowth, trend: growth.revenueGrowth.startsWith('-') ? "down" : "up", color: growth.revenueGrowth.startsWith('-') ? "text-destructive" : "text-success" },
-        { label: "Expense Ratio", value: growth.expenseRatio, trend: "neutral", color: "text-warning" },
-        { label: "Profit Margin", value: growth.profitMargin, trend: growth.profitMargin.startsWith('-') ? "down" : "up", color: growth.profitMargin.startsWith('-') ? "text-destructive" : "text-success" },
-        { label: "Customer Retention", value: growth.customerRetention, trend: "up", color: "text-success" },
+        { label: "Revenue Growth", value: revGrowthStr, trend: revGrowthStr.startsWith('-') ? "down" : "up", color: revGrowthStr.startsWith('-') ? "text-destructive" : "text-success" },
+        { label: "Expense Ratio", value: growth.expenseRatio || "0%", trend: "neutral", color: "text-warning" },
+        { label: "Profit Margin", value: profitMarginStr, trend: profitMarginStr.startsWith('-') ? "down" : "up", color: profitMarginStr.startsWith('-') ? "text-destructive" : "text-success" },
+        { label: "Customer Retention", value: growth.customerRetention || "0%", trend: "up", color: "text-success" },
       ]);
 
-      const topCats = spendingRes.data.topCategories.map((cat: any) => ({
+      const topCategories = Array.isArray(spendingRes.data?.topCategories) ? spendingRes.data.topCategories : [];
+      const topCats = topCategories.map((cat: any) => ({
         name: cat.name,
         revenue: cat.amount || 0,
-        growth: "+0%"
+        growth: cat.growth || "+0%"
       }));
       setTopCategories(topCats);
-      setCategoryData(spendingRes.data.topCategories.map((cat: any) => ({
+      setCategoryData(topCategories.map((cat: any) => ({
         ...cat,
         value: cat.amount || 0
       })));
-      setWeeklyStats(weeklyRes.data);
+      setWeeklyStats(Array.isArray(weeklyRes.data) ? weeklyRes.data : []);
 
       // Generate dynamic insights
-      const topCat = spendingRes.data.topCategories[0];
-      const revGrowth = growth.revenueGrowth;
-      const expRatioStr = growth.expenseRatio.replace('%', '');
+      const topCat = topCategories[0];
+      const revGrowth = growth.revenueGrowth || "0%";
+      const expRatioStr = (growth.expenseRatio || "0%").replace('%', '');
       const expRatio = parseInt(expRatioStr) || 0;
 
       setInsights({
@@ -118,23 +123,65 @@ export default function Analytics() {
     );
   }
 
+  const handleExportPDF = () => {
+    const element = document.getElementById('analytics-content');
+    if (element) {
+      const opt = {
+        margin:       0.5,
+        filename:     'analytics-dashboard.pdf',
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' }
+      };
+      html2pdf().set(opt).from(element).save();
+    }
+  };
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-6 space-y-6" id="analytics-content">
+      <div className="flex items-center justify-between" data-html2canvas-ignore>
         <div>
           <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
           <p className="text-muted-foreground">Deep insights into your business performance</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Filter className="mr-2 h-4 w-4" />
-            Filters
-          </Button>
-          <Button variant="outline" size="sm">
-            <Calendar className="mr-2 h-4 w-4" />
-            Date Range
-          </Button>
-          <Button size="sm" className="bg-gradient-primary">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="mr-2 h-4 w-4" />
+                Filters
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Filter Categories</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuCheckboxItem checked={filterActive} onCheckedChange={setFilterActive}>
+                Top Categories
+              </DropdownMenuCheckboxItem>
+              <DropdownMenuCheckboxItem checked={false}>
+                All Categories
+              </DropdownMenuCheckboxItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm">
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {date ? date.toLocaleDateString() : 'Date Range'}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <CalendarComponent
+                mode="single"
+                selected={date}
+                onSelect={setDate}
+                initialFocus
+              />
+            </PopoverContent>
+          </Popover>
+
+          <Button size="sm" className="bg-gradient-primary" onClick={handleExportPDF}>
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
@@ -250,10 +297,7 @@ export default function Analytics() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                <IncomeExpenseChart data={[]} />
-                <div className="text-center text-muted-foreground">
-                  <p>Category-specific analytics coming soon...</p>
-                </div>
+                <IncomeExpenseChart data={weeklyStats} />
               </div>
             </CardContent>
           </Card>
@@ -267,7 +311,7 @@ export default function Analytics() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                <ProfitLossChart data={[]} />
+                <ProfitLossChart data={weeklyStats.map(d => ({ name: d.name, profit: d.profit }))} />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="p-4 bg-success/10 rounded-lg">
                     <h3 className="font-medium text-success">Growing Trend</h3>

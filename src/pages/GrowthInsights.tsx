@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, DollarSign, Users, Target, BarChart3 } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
+import { TrendingUp, TrendingDown, IndianRupee, Users, Target, BarChart3 } from "lucide-react";
+
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -16,38 +16,32 @@ interface GrowthMetric {
 }
 
 export default function GrowthInsights() {
-    const { token } = useAuth();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [metrics, setMetrics] = useState<GrowthMetric[]>([]);
 
     useEffect(() => {
         const fetchGrowthData = async () => {
-            if (!token) {
-                setLoading(false);
-                return;
-            }
-
             try {
                 setLoading(true);
-                const response = await axios.get(`${""}/api/analytics/growth`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                });
+                const response = await axios.get(`${""}/api/analytics/growth`);
 
-                const data = response.data;
+                const data = response.data || {};
+                const revenueGrowth = data.revenueGrowth || "0%";
+                const profitMargin = data.profitMargin || "0%";
 
                 setMetrics([
                     {
                         label: "Revenue Growth",
-                        value: data.revenueGrowth,
-                        trend: data.revenueGrowth.startsWith("-") ? "down" : "up",
-                        color: data.revenueGrowth.startsWith("-") ? "text-destructive" : "text-success",
+                        value: revenueGrowth,
+                        trend: revenueGrowth.startsWith("-") ? "down" : "up",
+                        color: revenueGrowth.startsWith("-") ? "text-destructive" : "text-success",
                         icon: TrendingUp,
                         description: "Month-over-month revenue change"
                     },
                     {
                         label: "Expense Ratio",
-                        value: data.expenseRatio,
+                        value: data.expenseRatio || "0%",
                         trend: "neutral",
                         color: "text-warning",
                         icon: Target,
@@ -55,19 +49,19 @@ export default function GrowthInsights() {
                     },
                     {
                         label: "Profit Margin",
-                        value: data.profitMargin,
-                        trend: data.profitMargin.startsWith("-") ? "down" : "up",
-                        color: data.profitMargin.startsWith("-") ? "text-destructive" : "text-success",
-                        icon: DollarSign,
+                        value: profitMargin,
+                        trend: profitMargin.startsWith("-") ? "down" : "up",
+                        color: profitMargin.startsWith("-") ? "text-destructive" : "text-success",
+                        icon: IndianRupee,
                         description: "Net profit as % of revenue"
                     },
                     {
                         label: "Customer Retention",
-                        value: data.customerRetention,
+                        value: data.customerRetention || "0%",
                         trend: "up",
                         color: "text-success",
                         icon: Users,
-                        description: "Estimated customer loyalty"
+                        description: "Active users returning"
                     }
                 ]);
             } catch (error: any) {
@@ -79,7 +73,7 @@ export default function GrowthInsights() {
         };
 
         fetchGrowthData();
-    }, [token]);
+    }, []);
 
     if (loading) {
         return (

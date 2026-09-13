@@ -19,51 +19,49 @@ import {
   Upload
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { usePreferences } from "@/contexts/PreferencesContext";
 import axios from "axios";
 
 const API_URL = "" || 'http://localhost:3000';
 
 export default function Settings() {
+  const { name, businessName, phone, language, setName, setBusinessName, setPhone, setLanguage } = usePreferences();
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const languages = [
-    { value: "english", label: "English", native: "English" },
-    { value: "hindi", label: "Hindi", native: "हिन्दी" },
-    { value: "marathi", label: "Marathi", native: "मराठी" }
+    { value: "en", label: "English", native: "English" },
+    { value: "hi", label: "Hindi", native: "हिन्दी" },
   ];
 
   useEffect(() => {
-    fetchUserProfile();
-  }, []);
-
-  const fetchUserProfile = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get(`${API_URL}/api/user/profile`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setSettings(res.data);
-    } catch (error) {
-      console.error('Error fetching profile:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setSettings({
+      name: name || "",
+      businessName: businessName || "",
+      phone: phone || "",
+      language: language || "en",
+      voiceNotifications: true,
+      voiceAccuracy: "balanced",
+      autoRecord: false,
+      dailyReminders: true,
+      lowStockAlerts: true,
+      profitAlerts: true,
+      emailReports: false,
+      dataSync: true,
+      analyticsSharing: false,
+      locationAccess: false,
+    });
+    setLoading(false);
+  }, [name, businessName, phone, language]);
 
   const handleSaveProfile = async () => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(`${API_URL}/api/user/profile`, {
-        firstName: settings.firstName,
-        lastName: settings.lastName,
-        businessName: settings.businessName,
-        phone: settings.phone,
-        language: settings.language,
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      setName(settings.name);
+      setBusinessName(settings.businessName);
+      setPhone(settings.phone);
+      setLanguage(settings.language);
+      
       toast({
         title: "Profile Saved",
         description: "Your profile has been updated successfully.",
@@ -161,21 +159,13 @@ export default function Settings() {
               <CardDescription>Update your personal and business details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
+                  <Label htmlFor="name">Name</Label>
                   <Input
-                    id="firstName"
-                    value={settings.firstName || ''}
-                    onChange={(e) => setSettings({ ...settings, firstName: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input
-                    id="lastName"
-                    value={settings.lastName || ''}
-                    onChange={(e) => setSettings({ ...settings, lastName: e.target.value })}
+                    id="name"
+                    value={settings.name || ''}
+                    onChange={(e) => setSettings({ ...settings, name: e.target.value })}
                   />
                 </div>
               </div>
@@ -213,7 +203,7 @@ export default function Settings() {
                 <Label htmlFor="language">Primary Language</Label>
                 <select
                   id="language"
-                  value={settings.language || "hindi"}
+                  value={settings.language || "en"}
                   onChange={(e) => setSettings({ ...settings, language: e.target.value })}
                   className="w-full px-3 py-2 border border-input rounded-md bg-background"
                 >

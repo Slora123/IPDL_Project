@@ -14,8 +14,10 @@ import {
 } from "lucide-react";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
+// @ts-ignore
+import html2pdf from "html2pdf.js";
 
-const API_URL = "" || 'http://localhost:3000';
+const API_URL = 'http://localhost:3000';
 
 export default function Reports() {
   const [loading, setLoading] = useState<string | null>(null);
@@ -40,10 +42,6 @@ export default function Reports() {
       );
 
       setGeneratedReport(response.data);
-      toast({
-        title: "Report Generated!",
-        description: `${response.data.reportName} has been created successfully.`,
-      });
     } catch (error: any) {
       console.error('Error generating report:', error);
       toast({
@@ -59,19 +57,23 @@ export default function Reports() {
   const downloadReport = () => {
     if (!generatedReport) return;
 
-    const dataStr = JSON.stringify(generatedReport, null, 2);
-    const dataBlob = new Blob([dataStr], { type: 'application/json' });
-    const url = URL.createObjectURL(dataBlob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${generatedReport.reportName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-
-    toast({
-      title: "Downloaded!",
-      description: `Report saved successfully.`,
-    });
+    const element = document.getElementById('report-content');
+    if (element) {
+      const opt = {
+        margin:       0.5,
+        filename:     `${generatedReport.reportName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`,
+        image:        { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas:  { scale: 2 },
+        jsPDF:        { unit: 'in', format: 'letter', orientation: 'portrait' as const }
+      };
+      
+      html2pdf().set(opt).from(element).save();
+      
+      toast({
+        title: "Downloaded!",
+        description: `Report PDF generated successfully.`,
+      });
+    }
   };
 
   return (
@@ -130,17 +132,28 @@ export default function Reports() {
       {/* Generated Report Display */}
       {generatedReport && (
         <Card className="shadow-card border-2 border-primary">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>{generatedReport.reportName}</span>
-              <Badge className="bg-success text-success-foreground">Ready</Badge>
-            </CardTitle>
-            <CardDescription>
-              {generatedReport.period || generatedReport.date || "Generated just now"}
-            </CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <span>{generatedReport.reportName}</span>
+                <Badge className="bg-success text-success-foreground">Ready</Badge>
+              </CardTitle>
+              <CardDescription>
+                {generatedReport.period || generatedReport.date || "Generated just now"}
+              </CardDescription>
+            </div>
           </CardHeader>
+          
           <CardContent>
-            <div className="space-y-4">
+            {/* The actual printable report element */}
+            <div id="report-content" className="bg-background text-foreground p-6 rounded-lg space-y-6">
+              
+              {/* Header for PDF */}
+              <div className="border-b pb-4">
+                <h2 className="text-2xl font-bold">{generatedReport.reportName}</h2>
+                <p className="text-muted-foreground">{generatedReport.period || generatedReport.date || new Date().toLocaleDateString()}</p>
+              </div>
+
               {/* Display report summary */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {generatedReport.totalIncome !== undefined && (
@@ -169,15 +182,91 @@ export default function Reports() {
                 )}
               </div>
 
-              {/* Show raw data in expandable section */}
-              <details className="mt-4">
-                <summary className="cursor-pointer font-medium text-sm text-muted-foreground hover:text-foreground">
-                  View Detailed Data
-                </summary>
-                <pre className="mt-2 p-4 bg-muted rounded-lg text-xs overflow-auto max-h-96">
-                  {JSON.stringify(generatedReport, null, 2)}
-                </pre>
-              </details>
+              {/* Detailed Data Tables */}
+              <div className="mt-6">
+                <h3 className="text-lg font-semibold mb-3">Detailed Breakdown</h3>
+                <div className="overflow-x-auto rounded-lg border">
+                  <table className="w-full text-sm text-left">
+                    <thead className="bg-muted/50 text-muted-foreground">
+                      {generatedReport.transactions && (
+                        <tr>
+                          <th className="p-3 font-medium">Time</th>
+                          <th className="p-3 font-medium">Item</th>
+                          <th className="p-3 font-medium">Category</th>
+                          <th className="p-3 font-medium text-right">Amount</th>
+                        </tr>
+                      )}
+                      {generatedReport.dailyBreakdown && (
+                        <tr>
+                          <th className="p-3 font-medium">Date</th>
+                          <th className="p-3 font-medium text-right">Income</th>
+                          <th className="p-3 font-medium text-right">Expenses</th>
+                          <th className="p-3 font-medium text-right">Profit</th>
+                        </tr>
+                      )}
+                      {generatedReport.categories && (
+                        <tr>
+                          <th className="p-3 font-medium">Category</th>
+                          <th className="p-3 font-medium text-right">Income</th>
+                          <th className="p-3 font-medium text-right">Expenses</th>
+                          <th className="p-3 font-medium text-right">Net Amount</th>
+                        </tr>
+                      )}
+                      {generatedReport.languageBreakdown && (
+                        <tr>
+                          <th className="p-3 font-medium">Language</th>
+                          <th className="p-3 font-medium text-right">Count</th>
+                          <th className="p-3 font-medium text-right">Percentage</th>
+                        </tr>
+                      )}
+                    </thead>
+                    <tbody className="divide-y">
+                      {generatedReport.transactions?.map((t: any, i: number) => (
+                        <tr key={i} className="bg-card">
+                          <td className="p-3">{t.time}</td>
+                          <td className="p-3">{t.item}</td>
+                          <td className="p-3">{t.category}</td>
+                          <td className={`p-3 text-right font-medium ${t.type === 'income' ? 'text-success' : 'text-destructive'}`}>
+                            {t.type === 'income' ? '+' : '-'}₹{t.amount}
+                          </td>
+                        </tr>
+                      ))}
+                      {generatedReport.dailyBreakdown?.map((d: any, i: number) => (
+                        <tr key={i} className="bg-card">
+                          <td className="p-3">{d.name || d.date}</td>
+                          <td className="p-3 text-right text-success">₹{d.income || 0}</td>
+                          <td className="p-3 text-right text-destructive">₹{d.expense || d.expenses || 0}</td>
+                          <td className={`p-3 text-right font-medium ${(d.profit || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                            ₹{d.profit || 0}
+                          </td>
+                        </tr>
+                      ))}
+                      {generatedReport.categories?.map((c: any, i: number) => (
+                        <tr key={i} className="bg-card">
+                          <td className="p-3 font-medium">{c.category}</td>
+                          <td className="p-3 text-right text-success">₹{c.totalIncome || 0}</td>
+                          <td className="p-3 text-right text-destructive">₹{c.totalExpenses || 0}</td>
+                          <td className={`p-3 text-right font-medium ${(c.netAmount || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                            ₹{c.netAmount || 0}
+                          </td>
+                        </tr>
+                      ))}
+                      {generatedReport.languageBreakdown?.map((l: any, i: number) => (
+                        <tr key={i} className="bg-card">
+                          <td className="p-3 capitalize">{l.language}</td>
+                          <td className="p-3 text-right">{l.count}</td>
+                          <td className="p-3 text-right">{l.percentage}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {(!generatedReport.transactions && !generatedReport.dailyBreakdown && !generatedReport.categories && !generatedReport.languageBreakdown) && (
+                    <div className="p-8 text-center text-muted-foreground">
+                      No detailed data available for this report.
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

@@ -7,8 +7,7 @@ import {
   HelpCircle,
   Wallet,
   TrendingUp,
-  CreditCard,
-  AlertTriangle
+  CreditCard
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -29,7 +28,6 @@ const navigationItems = [
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Transactions", url: "/transactions", icon: Wallet },
   { title: "Spending", url: "/spending", icon: CreditCard },
-  { title: "Loan Alert", url: "/loan-alert", icon: AlertTriangle },
   { title: "Reports", url: "/reports", icon: PieChart },
 ];
 

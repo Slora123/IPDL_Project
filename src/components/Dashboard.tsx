@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Mic, TrendingUp, TrendingDown, DollarSign, PieChart, BarChart3 } from "lucide-react";
+import { Mic, TrendingUp, TrendingDown, IndianRupee, PieChart, BarChart3 } from "lucide-react";
 import { IncomeExpenseChart } from "./charts/IncomeExpenseChart";
 import { ProfitLossChart } from "./charts/ProfitLossChart";
 import { CategoryChart } from "./charts/CategoryChart";
@@ -10,12 +10,11 @@ import { VoiceButton } from "./VoiceButton";
 import { StatsCard } from "./StatsCard";
 import { useI18n } from "@/contexts/I18nContext";
 import { usePreferences } from "@/contexts/PreferencesContext";
-import { useAuth } from "@/contexts/AuthContext";
+
 
 export function Dashboard() {
   const { t } = useI18n();
   const { persona } = usePreferences();
-  const { token } = useAuth();
 
   const [stats, setStats] = useState({
     income: 0,
@@ -36,26 +35,13 @@ export function Dashboard() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       try {
         const [statsRes, weeklyRes, categoryRes, growthRes] = await Promise.all([
-          axios.get(`${""}/api/stats`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get(`${""}/api/analytics/weekly-stats`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get(`${""}/api/analytics/spending`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          axios.get(`${""}/api/analytics/growth`, {
-            headers: { Authorization: `Bearer ${token}` }
-          })
+          axios.get(`${""}/api/stats`),
+          axios.get(`${""}/api/analytics/weekly-stats`),
+          axios.get(`${""}/api/analytics/spending`),
+          axios.get(`${""}/api/analytics/growth`)
         ]);
 
         const data = statsRes.data;
@@ -65,10 +51,16 @@ export function Dashboard() {
           profit: data.profit || 0,
           transactions: data.transactions || 0
         });
-        setRecentTransactions(data.recentTransactions || []);
-        setWeeklyStats(weeklyRes.data);
-        setCategoryData(categoryRes.data.topCategories);
-        setGrowth(growthRes.data);
+        setRecentTransactions(Array.isArray(data.recentTransactions) ? data.recentTransactions : []);
+        setWeeklyStats(Array.isArray(weeklyRes.data) ? weeklyRes.data : []);
+        const topCats = Array.isArray(categoryRes.data?.topCategories) ? categoryRes.data.topCategories : [];
+        setCategoryData(topCats.map((cat: any) => ({ ...cat, value: cat.amount || 0 })));
+        setGrowth(growthRes.data || {
+          revenueGrowth: "0%",
+          expenseRatio: "0%",
+          profitMargin: "0%",
+          customerRetention: "0%"
+        });
       } catch (error) {
         console.error('Error fetching stats:', error);
       } finally {
@@ -77,7 +69,7 @@ export function Dashboard() {
     };
 
     fetchStats();
-  }, [token]);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
@@ -90,10 +82,6 @@ export function Dashboard() {
             </h1>
             <p className="text-muted-foreground">{t("subheader_today", "dashboard")}</p>
           </div>
-          <Button variant="outline" className="shadow-card">
-            <PieChart className="mr-2 h-4 w-4" />
-            {t("view_reports", "dashboard")}
-          </Button>
         </div>
 
         {/* Stats Cards */}
@@ -116,7 +104,7 @@ export function Dashboard() {
             <StatsCard
               title={t("net_profit", "dashboard")}
               value={`₹${stats.profit.toLocaleString()}`}
-              icon={DollarSign}
+              icon={IndianRupee}
               trend={growth.profitMargin}
               className="bg-gradient-primary"
             />
@@ -155,7 +143,7 @@ export function Dashboard() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ProfitLossChart data={weeklyStats.map(d => ({ name: d.name, profit: d.profit }))} />
+              <ProfitLossChart data={(Array.isArray(weeklyStats) ? weeklyStats : []).map(d => ({ name: d?.name || '', profit: d?.profit || 0 }))} />
             </CardContent>
           </Card>
         </div>
@@ -186,13 +174,13 @@ export function Dashboard() {
                       <p className="font-medium">{transaction.item}</p>
                       <p className="text-sm text-muted-foreground">{transaction.time}</p>
                     </div>
-                    <div className={`text-right ${transaction.type === 'sale' ? 'text-success' : 'text-destructive'
+                    <div className={`text-right ${transaction.type === 'income' ? 'text-success' : 'text-destructive'
                       }`}>
                       <p className="font-semibold">
-                        {transaction.type === 'sale' ? '+' : '-'}₹{transaction.amount}
+                        {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount}
                       </p>
                       <p className="text-xs">
-                        {transaction.type === 'sale' ? t("sale", "dashboard") : t("expense", "dashboard")}
+                        {transaction.type === 'income' ? t("income", "dashboard") : t("expense", "dashboard")}
                       </p>
                     </div>
                   </div>
@@ -209,7 +197,7 @@ export function Dashboard() {
           </CardHeader>
           <CardContent>
             <p className="text-muted-foreground">
-              {categoryData[0] ? (
+              {Array.isArray(categoryData) && categoryData[0] ? (
                 <>
                   <strong>Top Performing Category:</strong> {categoryData[0].name} is currently leading your activity. Keep monitoring your flow!
                 </>

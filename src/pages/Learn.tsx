@@ -2,6 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
+import { usePreferences } from "@/contexts/PreferencesContext";
+import { useState } from "react";
 import {
   BookOpen,
   Play,
@@ -16,8 +20,23 @@ import {
   Award,
   CheckCircle
 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Learn() {
+  const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState("courses");
+  const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
+  const [showProgress, setShowProgress] = useState(false);
+  const { language } = usePreferences();
+  const isEnglish = language === 'en';
+
+  const handleFeatureNotReady = (featureName: string) => {
+    toast({
+      title: "Feature coming soon",
+      description: `${featureName} is currently under development.`,
+    });
+  };
+
   const courses = [
     {
       id: "finance-101",
@@ -30,7 +49,8 @@ export default function Learn() {
       rating: 4.8,
       language: "Hindi/English",
       category: "Finance",
-      color: "border-primary/20 bg-primary/5"
+      color: "border-primary/20 bg-primary/5",
+      videoId: "Fds7ypAXMFc" // Valid video
     },
     {
       id: "digital-growth",
@@ -43,7 +63,8 @@ export default function Learn() {
       rating: 4.9,
       language: "Hindi/Marathi",
       category: "Marketing",
-      color: "border-success/20 bg-success/5"
+      color: "border-success/20 bg-success/5",
+      videoId: "YhK_PGhdPe8"
     }
   ];
 
@@ -88,8 +109,9 @@ export default function Learn() {
 
   const videos = [
     {
-      title: "How to Use Voice Commands Effectively",
-      titleHindi: "वॉयस कमांड का प्रभावी उपयोग कैसे करें",
+      title: "Finance For Beginners",
+      titleHindi: "शुरुआती लोगों के लिए वित्त",
+      videoId: "Fds7ypAXMFc",
       duration: "8:32",
       views: "2.1K",
       category: "Tutorial"
@@ -97,13 +119,15 @@ export default function Learn() {
     {
       title: "Reading Your Financial Dashboard",
       titleHindi: "अपना वित्तीय डैशबोर्ड पढ़ना",
+      videoId: "YhK_PGhdPe8",
       duration: "12:15",
       views: "1.8K",
       category: "Analytics"
     },
     {
-      title: "Setting Up Categories for Your Business",
-      titleHindi: "अपने व्यापार के लिए श्रेणियां सेट करना",
+      title: "Small Business Accounting",
+      titleHindi: "लघु व्यवसाय लेखांकन",
+      videoId: "pKpdibyljR4",
       duration: "6:45",
       views: "3.2K",
       category: "Setup"
@@ -123,17 +147,13 @@ export default function Learn() {
         <div>
           <h1 className="text-3xl font-bold">Learning Center</h1>
           <p className="text-muted-foreground">
-            शिक्षा केंद्र - Improve your business skills with our courses and tips
+            {!isEnglish && "शिक्षा केंद्र - "}Improve your business skills with our courses and tips
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => setShowProgress(true)}>
             <Star className="mr-2 h-4 w-4" />
             My Progress
-          </Button>
-          <Button size="sm" className="bg-gradient-primary">
-            <BookOpen className="mr-2 h-4 w-4" />
-            Browse All
           </Button>
         </div>
       </div>
@@ -165,7 +185,7 @@ export default function Learn() {
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="courses" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="courses">Courses</TabsTrigger>
           <TabsTrigger value="tips">Daily Tips</TabsTrigger>
@@ -181,7 +201,7 @@ export default function Learn() {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <CardTitle className="mb-1">{course.title}</CardTitle>
-                      <p className="text-sm text-muted-foreground mb-2">{course.titleHindi}</p>
+                      {!isEnglish && <p className="text-sm text-muted-foreground mb-2">{course.titleHindi}</p>}
                       <CardDescription>{course.description}</CardDescription>
                     </div>
                     <Badge variant="secondary">{course.level}</Badge>
@@ -209,7 +229,7 @@ export default function Learn() {
                         <Badge variant="outline" className="mr-2">{course.language}</Badge>
                         <Badge variant="outline">{course.category}</Badge>
                       </div>
-                      <Button size="sm" className="bg-gradient-success">
+                      <Button size="sm" className="bg-gradient-success" onClick={() => setPlayingVideoId(course.videoId)}>
                         <Play className="mr-2 h-4 w-4" />
                         Start Course
                       </Button>
@@ -226,15 +246,15 @@ export default function Learn() {
             <Card key={index} className="shadow-card">
               <CardHeader>
                 <CardTitle>{tipCategory.category}</CardTitle>
-                <CardDescription className="text-base">{tipCategory.categoryHindi}</CardDescription>
+                {!isEnglish && <CardDescription className="text-base">{tipCategory.categoryHindi}</CardDescription>}
               </CardHeader>
               <CardContent className="space-y-4">
                 {tipCategory.tips.map((tip, tipIndex) => (
                   <div key={tipIndex} className="p-4 bg-muted/50 rounded-lg">
                     <h4 className="font-medium mb-1">{tip.title}</h4>
-                    <p className="text-sm text-muted-foreground mb-2">{tip.titleHindi}</p>
+                    {!isEnglish && <p className="text-sm text-muted-foreground mb-2">{tip.titleHindi}</p>}
                     <p className="text-sm mb-1">{tip.content}</p>
-                    <p className="text-sm text-muted-foreground italic">{tip.contentHindi}</p>
+                    {!isEnglish && <p className="text-sm text-muted-foreground italic">{tip.contentHindi}</p>}
                   </div>
                 ))}
               </CardContent>
@@ -245,24 +265,35 @@ export default function Learn() {
         <TabsContent value="videos" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {videos.map((video, index) => (
-              <Card key={index} className="shadow-card hover:shadow-lg transition-shadow cursor-pointer group">
-                <CardContent className="p-4">
-                  <div className="aspect-video bg-muted rounded-lg mb-3 flex items-center justify-center group-hover:bg-muted/80 transition-colors">
-                    <Play className="h-12 w-12 text-muted-foreground group-hover:text-primary transition-colors" />
+              <Card key={index} className="shadow-card hover:shadow-lg transition-shadow overflow-hidden group">
+                <CardContent className="p-0">
+                  <div className="aspect-video w-full bg-muted">
+                    <iframe 
+                      width="100%" 
+                      height="100%" 
+                      src={`https://www.youtube.com/embed/${video.videoId}`} 
+                      title={video.title}
+                      frameBorder="0" 
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                      allowFullScreen
+                      className="w-full h-full"
+                    ></iframe>
                   </div>
+                  
+                  <div className="p-4">
+                    <h3 className="font-medium mb-1 line-clamp-2">{video.title}</h3>
+                    {!isEnglish && <p className="text-sm text-muted-foreground mb-2">{video.titleHindi}</p>}
 
-                  <h3 className="font-medium mb-1 line-clamp-2">{video.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-2">{video.titleHindi}</p>
-
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>{video.duration}</span>
-                    <div className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      {video.views}
+                    <div className="flex items-center justify-between text-sm text-muted-foreground">
+                      <span>{video.duration}</span>
+                      <div className="flex items-center gap-1">
+                        <Users className="h-4 w-4" />
+                        {video.views}
+                      </div>
                     </div>
-                  </div>
 
-                  <Badge variant="outline" className="mt-2">{video.category}</Badge>
+                    <Badge variant="outline" className="mt-2">{video.category}</Badge>
+                  </div>
                 </CardContent>
               </Card>
             ))}
@@ -280,15 +311,15 @@ export default function Learn() {
                 <CardDescription>Financial tools to help your business</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={() => handleFeatureNotReady('Profit Margin Calculator')}>
                   <PiggyBank className="mr-2 h-4 w-4" />
                   Profit Margin Calculator
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={() => handleFeatureNotReady('Break-even Analysis')}>
                   <TrendingUp className="mr-2 h-4 w-4" />
                   Break-even Analysis
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={() => handleFeatureNotReady('ROI Calculator')}>
                   <Target className="mr-2 h-4 w-4" />
                   ROI Calculator
                 </Button>
@@ -304,15 +335,15 @@ export default function Learn() {
                 <CardDescription>Helpful links and references</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-between">
+                <Button variant="outline" className="w-full justify-between" onClick={() => handleFeatureNotReady('Government Schemes Directory')}>
                   Government Schemes for SMEs
                   <ExternalLink className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" className="w-full justify-between">
+                <Button variant="outline" className="w-full justify-between" onClick={() => handleFeatureNotReady('GST Registration Guide')}>
                   GST Registration Guide
                   <ExternalLink className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" className="w-full justify-between">
+                <Button variant="outline" className="w-full justify-between" onClick={() => handleFeatureNotReady('Digital India Resources')}>
                   Digital India Resources
                   <ExternalLink className="h-4 w-4" />
                 </Button>
@@ -344,6 +375,69 @@ export default function Learn() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Video Player Modal */}
+      <Dialog open={!!playingVideoId} onOpenChange={(open) => !open && setPlayingVideoId(null)}>
+        <DialogContent className="sm:max-w-[800px] p-0 overflow-hidden bg-black border-none">
+          <div className="aspect-video w-full">
+            {playingVideoId && (
+              <iframe
+                width="100%"
+                height="100%"
+                src={`https://www.youtube.com/embed/${playingVideoId}?autoplay=1`}
+                title="Course Video"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Progress Modal */}
+      <Dialog open={showProgress} onOpenChange={setShowProgress}>
+        <DialogContent className="sm:max-w-[500px] bg-white dark:bg-slate-950 border border-border/50">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-2xl">
+              <Star className="h-6 w-6 text-yellow-500 fill-yellow-500" />
+              My Learning Progress
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-6 py-4">
+            <div>
+              <p className="text-muted-foreground mb-4">
+                You're doing great! You have learned how to use voice commands to record transactions 
+                and are making good progress on basic profit calculation methods.
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">Small Business Financial Management</h4>
+                  <span className="text-sm text-success font-medium">100%</span>
+                </div>
+                <Progress value={100} className="h-2 bg-muted" />
+                <p className="text-xs text-muted-foreground mt-2">
+                  Completed! You earned the "Voice Expert" and "First Week Complete" badges.
+                </p>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">Digital Growth for Retailers</h4>
+                  <span className="text-sm font-medium">45%</span>
+                </div>
+                <Progress value={45} className="h-2 bg-muted" />
+                <p className="text-xs text-muted-foreground mt-2">
+                  In progress (2h 15m remaining). Keep it up!
+                </p>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
