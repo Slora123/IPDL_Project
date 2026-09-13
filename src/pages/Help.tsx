@@ -184,7 +184,7 @@ export default function Help() {
         <div>
           <h1 className="text-3xl font-bold">Help & Support</h1>
           <p className="text-muted-foreground">
-            {!isEnglish && "सहायता और समर्थन - "}Get help with VoicePay features and troubleshooting
+            {isEnglish ? "Get help with VoicePay features and troubleshooting" : "सहायता और समर्थन - VoicePay सुविधाओं और समस्या निवारण में सहायता प्राप्त करें"}
           </p>
         </div>
       </div>
@@ -204,7 +204,7 @@ export default function Help() {
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder={`Search FAQs...${!isEnglish ? ' / FAQ खोजें...' : ''}`}
+                  placeholder={isEnglish ? "Search FAQs..." : "FAQ खोजें..."}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -229,14 +229,12 @@ export default function Help() {
                       <AccordionItem key={index} value={`item-${categoryIndex}-${index}`}>
                         <AccordionTrigger className="text-left">
                           <div>
-                            <div className="font-medium">{item.question}</div>
-                            {!isEnglish && <div className="text-sm text-muted-foreground mt-1">{item.questionHindi}</div>}
+                            <div className="font-medium">{isEnglish ? item.question : item.questionHindi}</div>
                           </div>
                         </AccordionTrigger>
                         <AccordionContent>
                           <div className="space-y-2 pt-2">
-                            <p className="text-foreground">{item.answer}</p>
-                            {!isEnglish && <p className="text-muted-foreground italic">{item.answerHindi}</p>}
+                            <p className="text-foreground">{isEnglish ? item.answer : item.answerHindi}</p>
                           </div>
                         </AccordionContent>
                       </AccordionItem>
@@ -255,10 +253,8 @@ export default function Help() {
               <Card key={index} className={`shadow-card border-2 ${option.color} cursor-pointer hover:shadow-lg transition-shadow`}>
                 <CardContent className="p-6 text-center">
                   <option.icon className="h-12 w-12 mx-auto mb-4" />
-                  <h3 className="font-semibold mb-1">{option.title}</h3>
-                  {!isEnglish && <p className="text-sm text-muted-foreground mb-2">{option.titleHindi}</p>}
-                  <p className="text-sm mb-3">{option.description}</p>
-                  {!isEnglish && <p className="text-sm italic mb-4">{option.descriptionHindi}</p>}
+                  <h3 className="font-semibold mb-1">{isEnglish ? option.title : option.titleHindi}</h3>
+                  <p className="text-sm mb-3">{isEnglish ? option.description : option.descriptionHindi}</p>
                   <Badge variant="secondary" className="mb-3">{option.available}</Badge>
                   <Button className="w-full" size="sm">
                     {option.action}
@@ -272,30 +268,30 @@ export default function Help() {
           <Card className="shadow-card">
             <CardHeader>
               <CardTitle>Send us a Message</CardTitle>
-              <CardDescription>{!isEnglish && "हमें एक संदेश भेजें - "}Describe your issue in detail</CardDescription>
+              <CardDescription>{isEnglish ? "Describe your issue in detail" : "हमें एक संदेश भेजें - अपनी समस्या का विस्तार से वर्णन करें"}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label htmlFor="name" className="text-sm font-medium">Name {!isEnglish && "/ नाम"}</label>
+                  <label htmlFor="name" className="text-sm font-medium">{isEnglish ? "Name" : "नाम"}</label>
                   <Input id="name" placeholder="Your full name" />
                 </div>
                 <div className="space-y-2">
-                  <label htmlFor="email" className="text-sm font-medium">Email {!isEnglish && "/ ईमेल"}</label>
+                  <label htmlFor="email" className="text-sm font-medium">{isEnglish ? "Email" : "ईमेल"}</label>
                   <Input id="email" type="email" placeholder="your@email.com" />
                 </div>
               </div>
               
               <div className="space-y-2">
-                <label htmlFor="subject" className="text-sm font-medium">Subject {!isEnglish && "/ विषय"}</label>
+                <label htmlFor="subject" className="text-sm font-medium">{isEnglish ? "Subject" : "विषय"}</label>
                 <Input id="subject" placeholder="Brief description of your issue" />
               </div>
               
               <div className="space-y-2">
-                <label htmlFor="message" className="text-sm font-medium">Message {!isEnglish && "/ संदेश"}</label>
+                <label htmlFor="message" className="text-sm font-medium">{isEnglish ? "Message" : "संदेश"}</label>
                 <Textarea 
                   id="message"
-                  placeholder={`Describe your issue in detail...${!isEnglish ? ' / अपनी समस्या का विस्तार से वर्णन करें...' : ''}`}
+                  placeholder={isEnglish ? "Describe your issue in detail..." : "अपनी समस्या का विस्तार से वर्णन करें..."}
                   value={supportMessage}
                   onChange={(e) => setSupportMessage(e.target.value)}
                   rows={4}
@@ -304,7 +300,7 @@ export default function Help() {
 
               <Button onClick={handleSupportSubmit} className="bg-gradient-primary">
                 <Send className="mr-2 h-4 w-4" />
-                Send Message {!isEnglish && "/ संदेश भेजें"}
+                {isEnglish ? "Send Message" : "संदेश भेजें"}
               </Button>
             </CardContent>
           </Card>
@@ -317,8 +313,7 @@ export default function Help() {
                 <CardContent className="p-6">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h3 className="font-semibold mb-1">{tutorial.title}</h3>
-                      {!isEnglish && <p className="text-sm text-muted-foreground mb-2">{tutorial.titleHindi}</p>}
+                      <h3 className="font-semibold mb-1">{isEnglish ? tutorial.title : tutorial.titleHindi}</h3>
                     </div>
                     <Badge variant="outline">{tutorial.level}</Badge>
                   </div>

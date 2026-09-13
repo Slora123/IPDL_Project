@@ -147,7 +147,7 @@ export default function Learn() {
         <div>
           <h1 className="text-3xl font-bold">Learning Center</h1>
           <p className="text-muted-foreground">
-            {!isEnglish && "शिक्षा केंद्र - "}Improve your business skills with our courses and tips
+            {isEnglish ? "Improve your business skills with our courses and tips" : "शिक्षा केंद्र - हमारे पाठ्यक्रम और युक्तियों के साथ अपने व्यावसायिक कौशल में सुधार करें"}
           </p>
         </div>
         <div className="flex gap-2">
@@ -200,8 +200,7 @@ export default function Learn() {
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <CardTitle className="mb-1">{course.title}</CardTitle>
-                      {!isEnglish && <p className="text-sm text-muted-foreground mb-2">{course.titleHindi}</p>}
+                      <CardTitle className="mb-1">{isEnglish ? course.title : course.titleHindi}</CardTitle>
                       <CardDescription>{course.description}</CardDescription>
                     </div>
                     <Badge variant="secondary">{course.level}</Badge>
@@ -245,16 +244,13 @@ export default function Learn() {
           {tips.map((tipCategory, index) => (
             <Card key={index} className="shadow-card">
               <CardHeader>
-                <CardTitle>{tipCategory.category}</CardTitle>
-                {!isEnglish && <CardDescription className="text-base">{tipCategory.categoryHindi}</CardDescription>}
+                <CardTitle>{isEnglish ? tipCategory.category : tipCategory.categoryHindi}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {tipCategory.tips.map((tip, tipIndex) => (
                   <div key={tipIndex} className="p-4 bg-muted/50 rounded-lg">
-                    <h4 className="font-medium mb-1">{tip.title}</h4>
-                    {!isEnglish && <p className="text-sm text-muted-foreground mb-2">{tip.titleHindi}</p>}
-                    <p className="text-sm mb-1">{tip.content}</p>
-                    {!isEnglish && <p className="text-sm text-muted-foreground italic">{tip.contentHindi}</p>}
+                    <h4 className="font-medium mb-1">{isEnglish ? tip.title : tip.titleHindi}</h4>
+                    <p className="text-sm mb-1">{isEnglish ? tip.content : tip.contentHindi}</p>
                   </div>
                 ))}
               </CardContent>
@@ -281,8 +277,7 @@ export default function Learn() {
                   </div>
                   
                   <div className="p-4">
-                    <h3 className="font-medium mb-1 line-clamp-2">{video.title}</h3>
-                    {!isEnglish && <p className="text-sm text-muted-foreground mb-2">{video.titleHindi}</p>}
+                    <h3 className="font-medium mb-1 line-clamp-2">{isEnglish ? video.title : video.titleHindi}</h3>
 
                     <div className="flex items-center justify-between text-sm text-muted-foreground">
                       <span>{video.duration}</span>
