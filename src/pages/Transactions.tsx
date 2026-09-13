@@ -362,7 +362,7 @@ export default function Transactions() {
 
       {/* Transaction Tabs */}
       <Tabs defaultValue="all" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto w-full justify-start sm:justify-center">
           <TabsTrigger value="all">{t('all_transactions_tab', 'dashboard')}</TabsTrigger>
           <TabsTrigger value="today">{t('today', 'common')}</TabsTrigger>
           <TabsTrigger value="income">{t('income_only', 'dashboard')}</TabsTrigger>
