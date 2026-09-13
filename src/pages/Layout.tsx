@@ -40,7 +40,7 @@ export function Layout({ children }: LayoutProps) {
               <UserMenu />
             </div>
           </header>
-          <main className="flex-1">
+          <main className="flex-1 w-full min-w-0 overflow-x-hidden">
             {children}
           </main>
         </SidebarInset>

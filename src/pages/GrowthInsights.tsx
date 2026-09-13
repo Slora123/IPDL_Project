@@ -78,7 +78,7 @@ export default function GrowthInsights() {
     if (loading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6">
-                <div className="container mx-auto space-y-6">
+                <div className="w-full max-w-7xl mx-auto space-y-6">
                     <div>
                         <Skeleton className="h-10 w-64 mb-2" />
                         <Skeleton className="h-5 w-96" />
@@ -96,7 +96,7 @@ export default function GrowthInsights() {
     if (error) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-background to-muted/20 p-6">
-                <div className="container mx-auto">
+                <div className="w-full max-w-7xl mx-auto">
                     <Alert variant="destructive">
                         <AlertDescription>{error}</AlertDescription>
                     </Alert>
@@ -107,7 +107,7 @@ export default function GrowthInsights() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
-            <div className="container mx-auto p-6 space-y-6">
+            <div className="w-full max-w-7xl mx-auto p-6 space-y-6">
                 {/* Header */}
                 <div>
                     <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent">

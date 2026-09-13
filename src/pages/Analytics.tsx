@@ -110,12 +110,12 @@ export default function Analytics() {
   };
 
   if (loading) {
-    return <div className="container mx-auto p-6">Loading analytics...</div>;
+    return <div className="w-full max-w-7xl mx-auto p-6">Loading analytics...</div>;
   }
 
   if (error) {
     return (
-      <div className="container mx-auto p-6">
+      <div className="w-full max-w-7xl mx-auto p-6">
         <div className="bg-destructive/10 border border-destructive text-destructive px-4 py-3 rounded">
           <strong>Error:</strong> {error}
         </div>
@@ -138,7 +138,7 @@ export default function Analytics() {
   };
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6" id="analytics-content">
+    <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6" id="analytics-content">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" data-html2canvas-ignore>
         <div>
           <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
