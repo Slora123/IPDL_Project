@@ -42,7 +42,7 @@ const settingsItems = [
 ];
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
 
@@ -51,6 +51,12 @@ export function AppSidebar() {
     isActive ? "bg-primary/10 text-primary font-medium border-r-2 border-primary" : "hover:bg-muted/50";
 
   const isCollapsed = state === "collapsed";
+
+  const handleNavClick = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   return (
     <Sidebar className={isCollapsed ? "w-14" : "w-64"} collapsible="icon">
@@ -77,7 +83,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="h-12 sm:h-8">
+                  <SidebarMenuButton asChild className="h-12 sm:h-8" onClick={handleNavClick}>
                     <NavLink to={item.url} end className={getNavClass}>
                       <item.icon className="h-5 w-5 sm:h-4 sm:w-4" />
                       {!isCollapsed && <span className="text-base sm:text-sm">{item.title}</span>}
@@ -96,7 +102,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {learningItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="h-12 sm:h-8">
+                  <SidebarMenuButton asChild className="h-12 sm:h-8" onClick={handleNavClick}>
                     <NavLink to={item.url} className={getNavClass}>
                       <item.icon className="h-5 w-5 sm:h-4 sm:w-4" />
                       {!isCollapsed && <span className="text-base sm:text-sm">{item.title}</span>}
@@ -115,7 +121,7 @@ export function AppSidebar() {
             <SidebarMenu>
               {settingsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild className="h-12 sm:h-8">
+                  <SidebarMenuButton asChild className="h-12 sm:h-8" onClick={handleNavClick}>
                     <NavLink to={item.url} className={getNavClass}>
                       <item.icon className="h-5 w-5 sm:h-4 sm:w-4" />
                       {!isCollapsed && <span className="text-base sm:text-sm">{item.title}</span>}
