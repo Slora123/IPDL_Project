@@ -186,76 +186,76 @@ export default function Reports() {
               <div className="mt-6">
                 <h3 className="text-lg font-semibold mb-3">Detailed Breakdown</h3>
                 <div className="overflow-x-auto rounded-lg border">
-                  <table className="w-full text-sm text-left">
+                  <table className="w-full text-xs sm:text-sm text-left">
                     <thead className="bg-muted/50 text-muted-foreground">
                       {generatedReport.transactions && (
                         <tr>
-                          <th className="p-3 font-medium">Time</th>
-                          <th className="p-3 font-medium">Item</th>
-                          <th className="p-3 font-medium">Category</th>
-                          <th className="p-3 font-medium text-right">Amount</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium">Time</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium">Item</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium">Category</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Amount</th>
                         </tr>
                       )}
                       {generatedReport.dailyBreakdown && (
                         <tr>
-                          <th className="p-3 font-medium">Date</th>
-                          <th className="p-3 font-medium text-right">Income</th>
-                          <th className="p-3 font-medium text-right">Expenses</th>
-                          <th className="p-3 font-medium text-right">Profit</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium">Date</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Income</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Expenses</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Profit</th>
                         </tr>
                       )}
                       {generatedReport.categories && (
                         <tr>
-                          <th className="p-3 font-medium">Category</th>
-                          <th className="p-3 font-medium text-right">Income</th>
-                          <th className="p-3 font-medium text-right">Expenses</th>
-                          <th className="p-3 font-medium text-right">Net Amount</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium">Category</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Income</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Expenses</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Net Amount</th>
                         </tr>
                       )}
                       {generatedReport.languageBreakdown && (
                         <tr>
-                          <th className="p-3 font-medium">Language</th>
-                          <th className="p-3 font-medium text-right">Count</th>
-                          <th className="p-3 font-medium text-right">Percentage</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium">Language</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Count</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Percentage</th>
                         </tr>
                       )}
                     </thead>
                     <tbody className="divide-y">
                       {generatedReport.transactions?.map((t: any, i: number) => (
                         <tr key={i} className="bg-card">
-                          <td className="p-3">{t.time}</td>
-                          <td className="p-3">{t.item}</td>
-                          <td className="p-3">{t.category}</td>
-                          <td className={`p-3 text-right font-medium ${t.type === 'income' ? 'text-success' : 'text-destructive'}`}>
+                          <td className="px-1.5 py-2 sm:p-3">{t.time}</td>
+                          <td className="px-1.5 py-2 sm:p-3">{t.item}</td>
+                          <td className="px-1.5 py-2 sm:p-3">{t.category}</td>
+                          <td className={`px-1.5 py-2 sm:p-3 text-right font-medium ${t.type === 'income' ? 'text-success' : 'text-destructive'}`}>
                             {t.type === 'income' ? '+' : '-'}₹{t.amount}
                           </td>
                         </tr>
                       ))}
                       {generatedReport.dailyBreakdown?.map((d: any, i: number) => (
                         <tr key={i} className="bg-card">
-                          <td className="p-3">{d.name || d.date}</td>
-                          <td className="p-3 text-right text-success">₹{d.income || 0}</td>
-                          <td className="p-3 text-right text-destructive">₹{d.expense || d.expenses || 0}</td>
-                          <td className={`p-3 text-right font-medium ${(d.profit || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                          <td className="px-1.5 py-2 sm:p-3">{d.name || d.date}</td>
+                          <td className="px-1.5 py-2 sm:p-3 text-right text-success">₹{d.income || 0}</td>
+                          <td className="px-1.5 py-2 sm:p-3 text-right text-destructive">₹{d.expense || d.expenses || 0}</td>
+                          <td className={`px-1.5 py-2 sm:p-3 text-right font-medium ${(d.profit || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
                             ₹{d.profit || 0}
                           </td>
                         </tr>
                       ))}
                       {generatedReport.categories?.map((c: any, i: number) => (
                         <tr key={i} className="bg-card">
-                          <td className="p-3 font-medium">{c.category}</td>
-                          <td className="p-3 text-right text-success">₹{c.totalIncome || 0}</td>
-                          <td className="p-3 text-right text-destructive">₹{c.totalExpenses || 0}</td>
-                          <td className={`p-3 text-right font-medium ${(c.netAmount || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
+                          <td className="px-1.5 py-2 sm:p-3 font-medium">{c.category}</td>
+                          <td className="px-1.5 py-2 sm:p-3 text-right text-success">₹{c.totalIncome || 0}</td>
+                          <td className="px-1.5 py-2 sm:p-3 text-right text-destructive">₹{c.totalExpenses || 0}</td>
+                          <td className={`px-1.5 py-2 sm:p-3 text-right font-medium ${(c.netAmount || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
                             ₹{c.netAmount || 0}
                           </td>
                         </tr>
                       ))}
                       {generatedReport.languageBreakdown?.map((l: any, i: number) => (
                         <tr key={i} className="bg-card">
-                          <td className="p-3 capitalize">{l.language}</td>
-                          <td className="p-3 text-right">{l.count}</td>
-                          <td className="p-3 text-right">{l.percentage}%</td>
+                          <td className="px-1.5 py-2 sm:p-3 capitalize">{l.language}</td>
+                          <td className="px-1.5 py-2 sm:p-3 text-right">{l.count}</td>
+                          <td className="px-1.5 py-2 sm:p-3 text-right">{l.percentage}%</td>
                         </tr>
                       ))}
                     </tbody>
