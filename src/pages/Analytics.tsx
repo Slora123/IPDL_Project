@@ -144,12 +144,12 @@ export default function Analytics() {
           <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
           <p className="text-muted-foreground">Deep insights into your business performance</p>
         </div>
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div className="grid grid-cols-3 gap-1 sm:gap-2 w-full sm:w-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="mr-2 h-4 w-4" />
-                Filters
+              <Button variant="outline" className="h-9 px-1 sm:px-3 text-[10px] sm:text-sm">
+                <Filter className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="truncate">Filters</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
@@ -166,9 +166,9 @@ export default function Analytics() {
 
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm">
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {date ? date.toLocaleDateString() : 'Date Range'}
+              <Button variant="outline" className="h-9 px-1 sm:px-3 text-[10px] sm:text-sm">
+                <CalendarIcon className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="truncate">{date ? date.toLocaleDateString() : 'Date'}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
@@ -181,9 +181,9 @@ export default function Analytics() {
             </PopoverContent>
           </Popover>
 
-          <Button size="sm" className="bg-gradient-primary" onClick={handleExportPDF}>
-            <Download className="mr-2 h-4 w-4" />
-            Export
+          <Button className="bg-gradient-primary h-9 px-1 sm:px-3 text-[10px] sm:text-sm" onClick={handleExportPDF}>
+            <Download className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="truncate">Export</span>
           </Button>
         </div>
       </div>
@@ -213,37 +213,37 @@ export default function Analytics() {
 
       {/* Charts Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList className="flex flex-wrap h-auto gap-2 p-1">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="revenue">Revenue</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
-          <TabsTrigger value="trends">Trends</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-4 h-auto gap-1 p-1">
+          <TabsTrigger value="overview" className="text-[10px] sm:text-sm px-0">Overview</TabsTrigger>
+          <TabsTrigger value="revenue" className="text-[10px] sm:text-sm px-0">Revenue</TabsTrigger>
+          <TabsTrigger value="categories" className="text-[10px] sm:text-sm px-0">Categories</TabsTrigger>
+          <TabsTrigger value="trends" className="text-[10px] sm:text-sm px-0">Trends</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Income vs Expenses (Weekly)
+              <CardHeader className="p-4 sm:p-6 pb-2">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-xl whitespace-nowrap">
+                  <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                  <span className="truncate">Income vs Expenses (Weekly)</span>
                 </CardTitle>
-                <CardDescription>Last 7 days performance breakdown</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">Last 7 days performance breakdown</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-1 sm:p-6 pb-2">
                 <IncomeExpenseChart data={weeklyStats} />
               </CardContent>
             </Card>
 
             <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Profit Trend
+              <CardHeader className="p-4 sm:p-6 pb-2">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-xl whitespace-nowrap">
+                  <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
+                  <span className="truncate">Profit Trend</span>
                 </CardTitle>
-                <CardDescription>Daily profit/loss tracking</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">Daily profit/loss tracking</CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-1 sm:p-6 pb-2">
                 <ProfitLossChart data={weeklyStats.map(d => ({ name: d.name, profit: d.profit }))} />
               </CardContent>
             </Card>
@@ -254,11 +254,11 @@ export default function Analytics() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               <Card className="shadow-card">
-                <CardHeader>
-                  <CardTitle>Revenue Breakdown by Category</CardTitle>
-                  <CardDescription>Analyze which categories drive the most revenue</CardDescription>
+                <CardHeader className="p-4 sm:p-6 pb-2">
+                  <CardTitle className="text-sm sm:text-xl truncate">Revenue Breakdown by Category</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">Analyze which categories drive the most revenue</CardDescription>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-1 sm:p-6 pb-2">
                   <CategoryChart data={categoryData} />
                 </CardContent>
               </Card>
@@ -291,11 +291,11 @@ export default function Analytics() {
 
         <TabsContent value="categories" className="space-y-4">
           <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Category Performance Analysis</CardTitle>
-              <CardDescription>Detailed breakdown of each business category</CardDescription>
+            <CardHeader className="p-4 sm:p-6 pb-2">
+              <CardTitle className="text-sm sm:text-xl truncate">Category Performance Analysis</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Detailed breakdown of each business category</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-1 sm:p-6 pb-2">
               <div className="space-y-6">
                 <IncomeExpenseChart data={weeklyStats} />
               </div>
@@ -305,11 +305,11 @@ export default function Analytics() {
 
         <TabsContent value="trends" className="space-y-4">
           <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Trends & Forecasting</CardTitle>
-              <CardDescription>AI-powered insights and predictions</CardDescription>
+            <CardHeader className="p-4 sm:p-6 pb-2">
+              <CardTitle className="text-sm sm:text-xl truncate">Trends &amp; Forecasting</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">AI-powered insights and predictions</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-2 sm:p-6 pb-2">
               <div className="space-y-6">
                 <ProfitLossChart data={weeklyStats.map(d => ({ name: d.name, profit: d.profit }))} />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

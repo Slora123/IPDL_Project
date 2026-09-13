@@ -151,10 +151,10 @@ export function Dashboard() {
         {/* Category Analysis & Recent Transactions */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <Card className="shadow-card bg-gradient-card">
-            <CardHeader>
-              <CardTitle>{t("category_breakdown", "dashboard")}</CardTitle>
+            <CardHeader className="p-4 sm:p-6 pb-2">
+              <CardTitle>{t('category_analysis', 'dashboard')}</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-1 sm:p-6 pb-2">
               <CategoryChart data={categoryData} />
             </CardContent>
           </Card>
