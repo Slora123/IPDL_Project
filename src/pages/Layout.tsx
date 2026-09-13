@@ -21,7 +21,7 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex items-center gap-4">
               <SidebarTrigger />
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-semibold">Trackify Dashboard</h1>
+                <h1 className="text-lg font-semibold hidden sm:block">Trackify Dashboard</h1>
               </div>
             </div>
             <div className="flex items-center gap-2">

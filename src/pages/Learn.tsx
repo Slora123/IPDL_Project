@@ -142,8 +142,8 @@ export default function Learn() {
   ];
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Learning Center</h1>
           <p className="text-muted-foreground">
@@ -186,7 +186,7 @@ export default function Learn() {
       </Card>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList>
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto gap-2 p-1">
           <TabsTrigger value="courses">Courses</TabsTrigger>
           <TabsTrigger value="tips">Daily Tips</TabsTrigger>
           <TabsTrigger value="videos">Video Tutorials</TabsTrigger>

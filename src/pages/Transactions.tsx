@@ -236,15 +236,15 @@ export default function Transactions() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">{t('transaction_history', 'dashboard')}</h1>
           <p className="text-muted-foreground">
             {t('all_transactions', 'dashboard')}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           {/* Filter Dropdown */}
           <Popover>
             <PopoverTrigger asChild>

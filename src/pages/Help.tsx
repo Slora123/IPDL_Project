@@ -179,8 +179,8 @@ export default function Help() {
   })).filter(category => category.questions.length > 0);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Help & Support</h1>
           <p className="text-muted-foreground">
@@ -190,7 +190,7 @@ export default function Help() {
       </div>
 
       <Tabs defaultValue="faq" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto gap-2 p-1">
           <TabsTrigger value="faq">FAQ</TabsTrigger>
           <TabsTrigger value="contact">Contact Support</TabsTrigger>
           <TabsTrigger value="tutorials">Tutorials</TabsTrigger>
