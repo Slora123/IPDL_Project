@@ -63,8 +63,8 @@ export function AppSidebar() {
             </div>
             {!isCollapsed && (
               <div>
-                <h2 className="font-bold text-lg">Trackify</h2>
-                <p className="text-xs text-muted-foreground">Finance Tracker</p>
+                <h2 className="font-bold text-xl sm:text-lg">Trackify</h2>
+                <p className="text-sm sm:text-xs text-muted-foreground">Finance Tracker</p>
               </div>
             )}
           </div>
@@ -72,15 +72,15 @@ export function AppSidebar() {
 
         {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel>Main Menu</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sm sm:text-xs mt-2 sm:mt-0">Main Menu</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigationItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild className="h-12 sm:h-8">
                     <NavLink to={item.url} end className={getNavClass}>
-                      <item.icon className="h-4 w-4" />
-                      {!isCollapsed && <span>{item.title}</span>}
+                      <item.icon className="h-5 w-5 sm:h-4 sm:w-4" />
+                      {!isCollapsed && <span className="text-base sm:text-sm">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -91,15 +91,15 @@ export function AppSidebar() {
 
         {/* Learning Section */}
         <SidebarGroup>
-          <SidebarGroupLabel>Learn & Grow</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sm sm:text-xs mt-2 sm:mt-0">Learn &amp; Grow</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {learningItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild className="h-12 sm:h-8">
                     <NavLink to={item.url} className={getNavClass}>
-                      <item.icon className="h-4 w-4" />
-                      {!isCollapsed && <span>{item.title}</span>}
+                      <item.icon className="h-5 w-5 sm:h-4 sm:w-4" />
+                      {!isCollapsed && <span className="text-base sm:text-sm">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -110,15 +110,15 @@ export function AppSidebar() {
 
         {/* Settings */}
         <SidebarGroup>
-          <SidebarGroupLabel>Support</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sm sm:text-xs mt-2 sm:mt-0">Support</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {settingsItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
+                  <SidebarMenuButton asChild className="h-12 sm:h-8">
                     <NavLink to={item.url} className={getNavClass}>
-                      <item.icon className="h-4 w-4" />
-                      {!isCollapsed && <span>{item.title}</span>}
+                      <item.icon className="h-5 w-5 sm:h-4 sm:w-4" />
+                      {!isCollapsed && <span className="text-base sm:text-sm">{item.title}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
