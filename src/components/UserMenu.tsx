@@ -12,13 +12,16 @@ import {
   User,
   Settings,
   HelpCircle,
-  ChevronDown
+  ChevronDown,
+  LogOut
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { usePreferences } from "@/contexts/PreferencesContext";
+import { useToast } from "@/hooks/use-toast";
 
 export function UserMenu() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const { name } = usePreferences();
   const displayName = name || "Guest User";
   const initial = displayName.charAt(0).toUpperCase();
@@ -56,6 +59,17 @@ export function UserMenu() {
         <DropdownMenuItem onClick={() => navigate("/help")}>
           <HelpCircle className="mr-2 h-4 w-4" />
           Help &amp; Support
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => {
+          toast({
+            title: "Logged out",
+            description: "You have been successfully logged out of your account."
+          });
+          setTimeout(() => window.location.href = '/', 1000);
+        }}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Log out
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
