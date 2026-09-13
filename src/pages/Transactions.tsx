@@ -244,13 +244,13 @@ export default function Transactions() {
             {t('all_transactions', 'dashboard')}
           </p>
         </div>
-        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+        <div className="flex flex-nowrap gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
           {/* Filter Dropdown */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="mr-2 h-4 w-4" />
-                {t('filter', 'common')}
+              <Button variant="outline" size="sm" className="flex-1 px-2 text-xs sm:text-sm sm:px-3 whitespace-nowrap">
+                <Filter className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                <span className="truncate">{t('filter', 'common')}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-60">
@@ -292,9 +292,9 @@ export default function Transactions() {
           {/* Date Range Dropdown */}
           <Popover>
             <PopoverTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Calendar className="mr-2 h-4 w-4" />
-                {t('date_range', 'dashboard')}
+              <Button variant="outline" size="sm" className="flex-1 px-2 text-xs sm:text-sm sm:px-3 whitespace-nowrap">
+                <Calendar className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+                <span className="truncate">{t('date_range', 'dashboard')}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-60">
@@ -329,9 +329,9 @@ export default function Transactions() {
             </PopoverContent>
           </Popover>
 
-          <Button size="sm" className="bg-gradient-primary" onClick={() => setIsManualDialogOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            {t('add_manual', 'dashboard')}
+          <Button size="sm" className="flex-1 px-2 text-xs sm:text-sm sm:px-3 bg-gradient-primary whitespace-nowrap" onClick={() => setIsManualDialogOpen(true)}>
+            <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+            <span className="truncate">{t('add_manual', 'dashboard')}</span>
           </Button>
         </div>
       </div>
