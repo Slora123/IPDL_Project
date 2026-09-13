@@ -168,13 +168,13 @@ export function Dashboard() {
                 {recentTransactions.map((transaction) => (
                   <div
                     key={transaction.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50"
+                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 gap-2"
                   >
-                    <div>
-                      <p className="font-medium">{transaction.item}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate" title={transaction.item}>{transaction.item}</p>
                       <p className="text-sm text-muted-foreground">{transaction.time}</p>
                     </div>
-                    <div className={`text-right ${transaction.type === 'income' ? 'text-success' : 'text-destructive'
+                    <div className={`text-right shrink-0 ${transaction.type === 'income' ? 'text-success' : 'text-destructive'
                       }`}>
                       <p className="font-semibold">
                         {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount}

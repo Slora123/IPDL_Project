@@ -175,10 +175,10 @@ export default function Transactions() {
       <Card className={`shadow-card hover:shadow-lg transition-all duration-200 border-l-4 ${transaction.type === 'income' ? 'border-l-success' : 'border-l-destructive'}`}>
         <CardContent className="p-4">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div className="flex-1 w-full">
+            <div className="flex-1 w-full min-w-0">
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="font-semibold text-lg">{transaction.item}</h3>
-                <Badge variant="outline" className="text-xs bg-background">
+                <h3 className="font-semibold text-lg truncate" title={transaction.item}>{transaction.item}</h3>
+                <Badge variant="outline" className="text-xs bg-background shrink-0">
                   {getLanguageFlag(transaction.language)}
                 </Badge>
                 {transaction.voiceInput && (
@@ -206,7 +206,7 @@ export default function Transactions() {
               )}
             </div>
 
-            <div className="flex items-center gap-4 w-full md:w-auto justify-end">
+            <div className="flex items-center gap-2 sm:gap-4 w-full md:w-auto justify-between md:justify-end shrink-0">
               <div className="text-right">
                 <div className={`text-xl font-bold ${getTypeColor(transaction.type)}`}>
                   {transaction.type === "income" ? "+" : "-"}₹{transaction.amount.toLocaleString()}
