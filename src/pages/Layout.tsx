@@ -14,7 +14,7 @@ export function Layout({ children }: LayoutProps) {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full overflow-x-hidden">
         <AppSidebar />
         <SidebarInset>
           <header className="h-16 flex items-center justify-between border-b bg-background px-4">

@@ -146,7 +146,7 @@ export default function Reports() {
           
           <CardContent>
             {/* The actual printable report element */}
-            <div id="report-content" className="bg-background text-foreground p-6 rounded-lg space-y-6">
+            <div id="report-content" className="bg-background text-foreground p-4 sm:p-6 rounded-lg space-y-4 sm:space-y-6 w-full overflow-hidden">
               
               {/* Header for PDF */}
               <div className="border-b pb-4">

@@ -138,13 +138,13 @@ export default function Analytics() {
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6" id="analytics-content">
-      <div className="flex items-center justify-between" data-html2canvas-ignore>
+    <div className="container mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6" id="analytics-content">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" data-html2canvas-ignore>
         <div>
           <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
           <p className="text-muted-foreground">Deep insights into your business performance</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm">
@@ -213,11 +213,11 @@ export default function Analytics() {
 
       {/* Charts Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
+        <TabsList className="flex flex-wrap h-auto gap-2 p-1">
           <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="revenue">Revenue Analysis</TabsTrigger>
-          <TabsTrigger value="categories">Category Performance</TabsTrigger>
-          <TabsTrigger value="trends">Trends & Forecasts</TabsTrigger>
+          <TabsTrigger value="revenue">Revenue</TabsTrigger>
+          <TabsTrigger value="categories">Categories</TabsTrigger>
+          <TabsTrigger value="trends">Trends</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
