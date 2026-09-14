@@ -8,7 +8,8 @@ import {
   Wallet,
   TrendingUp,
   CreditCard,
-  Scan
+  Scan,
+  Flame
 } from "lucide-react";
 import { NavLink, useLocation } from "react-router-dom";
 
@@ -30,6 +31,7 @@ const navigationItems = [
   { title: "Transactions", url: "/transactions", icon: Wallet },
   { title: "Spending", url: "/spending", icon: CreditCard },
   { title: "Scan Bill", url: "/scan", icon: Scan },
+  { title: "Trending", url: "/trending", icon: Flame },
   { title: "Reports", url: "/reports", icon: PieChart },
 ];
 
