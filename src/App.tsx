@@ -18,6 +18,7 @@ import Learn from "./pages/Learn";
 import GrowthInsights from "./pages/GrowthInsights";
 import Settings from "./pages/Settings";
 import Help from "./pages/Help";
+import ScanBill from "./pages/ScanBill";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -77,6 +78,11 @@ const AppContent = () => {
         <Route path="/help" element={
           <Layout>
             <Help />
+          </Layout>
+        } />
+        <Route path="/scan" element={
+          <Layout>
+            <ScanBill />
           </Layout>
         } />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
