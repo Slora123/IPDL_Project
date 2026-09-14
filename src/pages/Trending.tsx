@@ -3,12 +3,12 @@ import { TrendingUp, AlertTriangle, Package, Zap, ArrowRight, BarChart3 } from "
 import { Button } from "@/components/ui/button";
 
 const trendingItems = [
-  { name: "Kurkure Masala Munch", category: "Snacks", increase: "+25%", demand: "High", margin: "15%" },
-  { name: "Amul Taaza Milk 500ml", category: "Dairy", increase: "+18%", demand: "Very High", margin: "10%" },
-  { name: "Lays Magic Masala", category: "Snacks", increase: "+15%", demand: "High", margin: "18%" },
-  { name: "Aashirvaad Atta 5kg", category: "Groceries", increase: "+12%", demand: "Steady", margin: "8%" },
-  { name: "Thumbs Up 750ml", category: "Beverages", increase: "+22%", demand: "High", margin: "20%" },
-  { name: "Maggie 2-Min Noodles", category: "Groceries", increase: "+10%", demand: "High", margin: "12%" },
+  { name: "Kurkure Masala Munch", category: "Snacks", increase: "+25%", demand: "High", margin: "15%", color: "text-orange-500" },
+  { name: "Amul Taaza Milk 500ml", category: "Dairy", increase: "+18%", demand: "Very High", margin: "10%", color: "text-blue-500" },
+  { name: "Lays Magic Masala", category: "Snacks", increase: "+15%", demand: "High", margin: "18%", color: "text-indigo-500" },
+  { name: "Aashirvaad Atta 5kg", category: "Groceries", increase: "+12%", demand: "Steady", margin: "8%", color: "text-amber-600" },
+  { name: "Thumbs Up 750ml", category: "Beverages", increase: "+22%", demand: "High", margin: "20%", color: "text-red-600" },
+  { name: "Maggie 2-Min Noodles", category: "Groceries", increase: "+10%", demand: "High", margin: "12%", color: "text-yellow-500" },
 ];
 
 export default function Trending() {
@@ -90,7 +90,7 @@ export default function Trending() {
                 <tbody>
                   {trendingItems.map((item, idx) => (
                     <tr key={idx} className="border-t hover:bg-muted/30 transition-colors">
-                      <td className="py-3 px-4 font-medium">{item.name}</td>
+                      <td className={`py-3 px-4 font-bold ${item.color}`}>{item.name}</td>
                       <td className="py-3 px-4 text-muted-foreground">{item.category}</td>
                       <td className="py-3 px-4 text-center">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
