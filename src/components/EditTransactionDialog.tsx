@@ -76,8 +76,8 @@ export function EditTransactionDialog({
             const token = localStorage.getItem("token");
             console.log("Updating transaction:", { ...formData, amount: parseFloat(formData.amount) });
 
-            const response = await axios.put(
-                `${""}/api/transactions/${transaction.id}`,
+            const response = await axios.patch(
+                `/api/transactions/${transaction.id}`,
                 {
                     ...formData,
                     amount: parseFloat(formData.amount),

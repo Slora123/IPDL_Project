@@ -49,7 +49,7 @@ export function ManualTransactionDialog({
             console.log("Submitting transaction:", { ...formData, amount: parseFloat(formData.amount) });
 
             const response = await axios.post(
-                `${""}/api/transactions`,
+                '/api/transactions',
                 {
                     ...formData,
                     amount: parseFloat(formData.amount),

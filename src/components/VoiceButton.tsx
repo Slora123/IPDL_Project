@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -8,25 +8,55 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Mic, MicOff, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Mic, MicOff, Loader2, CheckCircle, XCircle, Globe, TrendingUp, TrendingDown } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { usePreferences } from "@/contexts/PreferencesContext";
 import axios from "axios";
 
+type Stage =
+  | "idle"
+  | "listening"
+  | "processing_speech"
+  | "converting_english"
+  | "understanding_transaction"
+  | "ready_to_confirm"
+  | "saving"
+  | "done"
+  | "error";
+
 interface TransactionPreview {
-  type: 'income' | 'expense';
+  type: "income" | "expense";
   amount: number;
   item: string;
   category: string;
-  transcript: string;
+  date?: string;
+  paymentMethod?: string;
+  source?: string;
+  voiceInput?: string;
+  language?: string;
 }
 
-export function VoiceButton() {
-  const [isRecording, setIsRecording] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false);
+const STAGE_LABELS: Record<Stage, string> = {
+  idle: "",
+  listening: "🎙️ Listening...",
+  processing_speech: "🔄 Transcribing speech...",
+  converting_english: "🌐 Converting to English...",
+  understanding_transaction: "🧠 Understanding transaction...",
+  ready_to_confirm: "✅ Ready to confirm",
+  saving: "💾 Saving transaction...",
+  done: "✅ Saved!",
+  error: "❌ Error",
+};
+
+export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () => void }) {
+  const [stage, setStage] = useState<Stage>("idle");
   const [recordingTime, setRecordingTime] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [transactionPreview, setTransactionPreview] = useState<TransactionPreview | null>(null);
+  const [transcript, setTranscript] = useState("");
+  const [englishText, setEnglishText] = useState("");
+  const [errorMessage, setErrorMessage] = useState("");
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -35,264 +65,295 @@ export function VoiceButton() {
   const { toast } = useToast();
   const { language } = usePreferences();
 
+  const clearTimer = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+  };
+
   const startRecording = async () => {
+    setErrorMessage("");
     try {
-      // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Detect supported mime type
-      const mimeTypes = [
-        'audio/webm',
-        'audio/webm;codecs=opus',
-        'audio/ogg;codecs=opus',
-        'audio/mp4',
-        'audio/mpeg',
-        'audio/wav'
-      ];
+      const mimeTypes = ['audio/webm', 'audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/wav'];
+      let selectedMimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || '';
 
-      let selectedMimeType = '';
-      for (const mimeType of mimeTypes) {
-        if (MediaRecorder.isTypeSupported(mimeType)) {
-          selectedMimeType = mimeType;
-          console.log('Using mime type:', mimeType);
-          break;
-        }
-      }
-
-      if (!selectedMimeType) {
-        // Fallback: no mime type specified (browser will choose)
-        console.log('No specific mime type supported, using browser default');
-      }
-
-      // Create MediaRecorder with supported mime type
       const options = selectedMimeType ? { mimeType: selectedMimeType } : {};
       const mediaRecorder = new MediaRecorder(stream, options);
 
       audioChunksRef.current = [];
-
       mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
       };
 
       mediaRecorder.onstop = async () => {
-        // Stop the stream
         stream.getTracks().forEach(track => track.stop());
+        clearTimer();
+        setRecordingTime(0);
 
-        // Create audio blob with detected mime type
         const mimeType = mediaRecorder.mimeType || 'audio/webm';
         const audioBlob = new Blob(audioChunksRef.current, { type: mimeType });
-
-        console.log('Audio blob created:', audioBlob.type, audioBlob.size, 'bytes');
-
-        // Send to backend
         await processAudio(audioBlob);
-
-        // Clear timer
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
-        setRecordingTime(0);
       };
 
       mediaRecorderRef.current = mediaRecorder;
       mediaRecorder.start();
-      setIsRecording(true);
+      setStage("listening");
 
-      // Start timer
-      timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
+      timerRef.current = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
 
-      toast({
-        title: "🎤 Recording...",
-        description: "Speak your transaction clearly",
-      });
-
-      // Auto-stop after 10 seconds
+      // Auto-stop after 12 seconds
       setTimeout(() => {
-        if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-          stopRecording();
-        }
-      }, 10000);
+        if (mediaRecorderRef.current?.state === 'recording') stopRecording();
+      }, 12000);
 
     } catch (error: any) {
-      console.error('Error accessing microphone:', error);
-      toast({
-        title: "Microphone Error",
-        description: error.message || "Could not access microphone. Please check permissions.",
-        variant: "destructive",
-      });
+      setStage("error");
+      const msg = error.name === 'NotAllowedError'
+        ? "Microphone permission denied. Please allow microphone access in your browser settings."
+        : error.name === 'NotFoundError'
+        ? "No microphone found. Please connect a microphone and try again."
+        : error.message || "Could not access microphone.";
+      setErrorMessage(msg);
+      toast({ title: "Microphone Error", description: msg, variant: "destructive" });
     }
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+    if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      setIsProcessing(true);
-
-      toast({
-        title: "Processing...",
-        description: "Transcribing audio with Whisper...",
-      });
+      setStage("processing_speech");
     }
+  };
+
+  const cancelRecording = () => {
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stream?.getTracks().forEach(t => t.stop());
+      mediaRecorderRef.current.stop();
+    }
+    clearTimer();
+    setRecordingTime(0);
+    setStage("idle");
+    toast({ title: "Cancelled", description: "Recording cancelled." });
   };
 
   const processAudio = async (audioBlob: Blob) => {
     try {
-      // Create form data
+      // Step 1: Send to SarvamAI transcribe+translate pipeline
+      setStage("processing_speech");
+
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.webm');
-      console.log('Sending voice for processing with language:', language || 'en');
-      formData.append('language', language || 'en');
+      formData.append('target_lang', language || 'en-IN');
 
-      // Send to backend
-      const response = await axios.post(
-        `${""}/api/voice/process`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      if (response.data.success) {
-        // Show confirmation dialog
-        setTransactionPreview({
-          type: response.data.transaction.type,
-          amount: response.data.transaction.amount,
-          item: response.data.transaction.item,
-          category: response.data.transaction.category,
-          transcript: response.data.transcript
-        });
-        setShowConfirmation(true);
-      } else {
-        toast({
-          title: "No Transaction Detected",
-          description: response.data.transcript
-            ? `Heard: "${response.data.transcript}"\n\nTry: 'I earned 500 rupees' or 'spent 50 on milk'`
-            : "Could not detect speech. Please try again.",
-          variant: "destructive",
-        });
-      }
-    } catch (error: any) {
-      console.error('Error processing audio:', error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.error || "Failed to process audio. Please try again.",
-        variant: "destructive",
+      setStage("converting_english");
+      const response = await axios.post('/api/voice/process', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        timeout: 60000
       });
-    } finally {
-      setIsProcessing(false);
+
+      setStage("understanding_transaction");
+
+      if (!response.data.success) {
+        setStage("error");
+        const msg = response.data.message || 'No transaction detected. Try: "I spent 250 rupees on groceries"';
+        setErrorMessage(msg);
+        toast({ title: "No Transaction Found", description: msg, variant: "destructive" });
+        return;
+      }
+
+      // Step 2: Show transcription + parsed transaction for user review
+      setTranscript(response.data.transcript || '');
+      setEnglishText(response.data.englishTranslation || '');
+      setTransactionPreview(response.data.transaction);
+      setStage("ready_to_confirm");
+      setShowConfirmation(true);
+
+    } catch (error: any) {
+      setStage("error");
+      const msg = error.response?.data?.error || error.message || "Failed to process audio.";
+      setErrorMessage(msg);
+      toast({ title: "Processing Error", description: msg, variant: "destructive" });
     }
   };
 
   const handleConfirm = async () => {
-    toast({
-      title: "✅ Transaction Added!",
-      description: `${transactionPreview?.type === 'income' ? 'Income' : 'Expense'}: ₹${transactionPreview?.amount}`,
-      variant: "default",
-    });
+    if (!transactionPreview) return;
+    setStage("saving");
+    try {
+      await axios.post('/api/transactions', {
+        ...transactionPreview,
+        source: 'voice',
+        voiceInput: transcript,
+      });
 
-    setShowConfirmation(false);
-    setTransactionPreview(null);
+      setStage("done");
+      setShowConfirmation(false);
+      setTransactionPreview(null);
+      setTranscript("");
+      setEnglishText("");
 
-    // Reload to show new transaction
-    setTimeout(() => {
-      window.location.reload();
-    }, 1000);
+      toast({
+        title: "✅ Transaction Saved!",
+        description: `${transactionPreview.type === 'income' ? 'Income' : 'Expense'}: ₹${transactionPreview.amount.toLocaleString()} — ${transactionPreview.item}`,
+      });
+
+      // Trigger parent refresh
+      onTransactionSaved?.();
+
+      setTimeout(() => setStage("idle"), 1500);
+    } catch (error: any) {
+      setStage("error");
+      const msg = error.response?.data?.error || "Failed to save transaction.";
+      setErrorMessage(msg);
+      toast({ title: "Save Failed", description: msg, variant: "destructive" });
+    }
   };
 
   const handleCancel = () => {
     setShowConfirmation(false);
     setTransactionPreview(null);
-    toast({
-      title: "Cancelled",
-      description: "Transaction not saved.",
-    });
+    setTranscript("");
+    setEnglishText("");
+    setStage("idle");
+    toast({ title: "Cancelled", description: "Transaction not saved." });
   };
 
   const handleButtonClick = () => {
-    if (isRecording) {
-      stopRecording();
-    } else {
-      startRecording();
-    }
+    if (stage === "listening") { stopRecording(); return; }
+    if (stage === "idle" || stage === "done" || stage === "error") startRecording();
   };
+
+  const isRecording = stage === "listening";
+  const isProcessing = ["processing_speech", "converting_english", "understanding_transaction", "saving"].includes(stage);
 
   return (
     <>
       {/* Fixed Floating Button */}
       <div className="fixed bottom-6 right-6 z-50">
-        <div className="relative">
+        <div className="relative flex flex-col items-center gap-2">
+          {/* Status label above button */}
+          {stage !== "idle" && (
+            <div className="text-xs font-medium bg-background border rounded-full px-3 py-1 shadow text-center whitespace-nowrap animate-in fade-in duration-200">
+              {STAGE_LABELS[stage]}
+            </div>
+          )}
+
           <Button
+            id="voice-button"
             onClick={handleButtonClick}
-            disabled={isProcessing}
+            disabled={isProcessing || stage === "saving"}
             size="icon"
             variant={isRecording ? "destructive" : "default"}
-            className="rounded-full h-14 w-14 shadow-xl hover:shadow-2xl transition-all"
+            className={`rounded-full h-14 w-14 shadow-xl hover:shadow-2xl transition-all ${
+              isRecording ? "animate-pulse ring-4 ring-destructive/30" : ""
+            }`}
+            title={isRecording ? "Stop recording" : "Start voice input"}
           >
             {isProcessing ? (
               <Loader2 className="h-6 w-6 animate-spin" />
             ) : isRecording ? (
-              <MicOff className="h-6 w-6 animate-pulse" />
+              <MicOff className="h-6 w-6" />
             ) : (
               <Mic className="h-6 w-6" />
             )}
           </Button>
 
+          {/* Recording timer */}
           {isRecording && (
-            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 text-xs font-medium text-destructive animate-pulse bg-background px-2 py-1 rounded-md shadow-sm">
+            <div className="text-xs font-bold text-destructive animate-pulse">
               {recordingTime}s
             </div>
+          )}
+
+          {/* Cancel button during recording */}
+          {isRecording && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="text-xs h-7 px-2"
+              onClick={cancelRecording}
+            >
+              Cancel
+            </Button>
           )}
         </div>
       </div>
 
       {/* Confirmation Dialog */}
-      <Dialog open={showConfirmation} onOpenChange={setShowConfirmation}>
+      <Dialog open={showConfirmation} onOpenChange={(open) => { if (!open) handleCancel(); }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              {transactionPreview?.type === 'income' ? (
-                <CheckCircle className="h-5 w-5 text-success" />
+              {transactionPreview?.type === "income" ? (
+                <CheckCircle className="h-5 w-5 text-green-500" />
               ) : (
-                <XCircle className="h-5 w-5 text-destructive" />
+                <XCircle className="h-5 w-5 text-red-500" />
               )}
               Confirm Transaction
             </DialogTitle>
-            <DialogDescription>
-              Heard: "{transactionPreview?.transcript}"
+            <DialogDescription className="space-y-1">
+              {transcript && (
+                <span className="block text-xs text-muted-foreground">
+                  🎙️ Heard: <em>"{transcript}"</em>
+                </span>
+              )}
+              {englishText && englishText !== transcript && (
+                <span className="block text-xs text-muted-foreground">
+                  <Globe className="inline h-3 w-3 mr-1" />
+                  English: <em>"{englishText}"</em>
+                </span>
+              )}
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
-              <div>
-                <p className="text-sm text-muted-foreground">Type</p>
-                <p className="text-lg font-semibold capitalize">
-                  {transactionPreview?.type}
-                </p>
+            {/* Main amount display */}
+            <div className={`flex items-center justify-between p-4 rounded-lg border-2 ${
+              transactionPreview?.type === "income"
+                ? "border-green-500/30 bg-green-500/5"
+                : "border-red-500/30 bg-red-500/5"
+            }`}>
+              <div className="flex items-center gap-2">
+                {transactionPreview?.type === "income" ? (
+                  <TrendingUp className="h-5 w-5 text-green-500" />
+                ) : (
+                  <TrendingDown className="h-5 w-5 text-red-500" />
+                )}
+                <div>
+                  <p className="text-sm text-muted-foreground">Type</p>
+                  <p className="text-lg font-semibold capitalize">{transactionPreview?.type}</p>
+                </div>
               </div>
               <div className="text-right">
                 <p className="text-sm text-muted-foreground">Amount</p>
-                <p className="text-2xl font-bold">₹{transactionPreview?.amount}</p>
+                <p className={`text-2xl font-bold ${transactionPreview?.type === "income" ? "text-green-600" : "text-red-600"}`}>
+                  ₹{transactionPreview?.amount?.toLocaleString()}
+                </p>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Item</p>
-                <p className="font-medium">{transactionPreview?.item}</p>
+            {/* Details grid */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 bg-muted/40 rounded-lg">
+                <p className="text-xs text-muted-foreground mb-1">Description</p>
+                <p className="font-medium text-sm line-clamp-2">{transactionPreview?.item}</p>
               </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Category</p>
-                <p className="font-medium">{transactionPreview?.category}</p>
+              <div className="p-3 bg-muted/40 rounded-lg">
+                <p className="text-xs text-muted-foreground mb-1">Category</p>
+                <Badge variant="secondary" className="text-xs">{transactionPreview?.category}</Badge>
               </div>
+              {transactionPreview?.date && (
+                <div className="p-3 bg-muted/40 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Date</p>
+                  <p className="font-medium text-sm">{transactionPreview.date}</p>
+                </div>
+              )}
+              {transactionPreview?.paymentMethod && (
+                <div className="p-3 bg-muted/40 rounded-lg">
+                  <p className="text-xs text-muted-foreground mb-1">Payment</p>
+                  <p className="font-medium text-sm">{transactionPreview.paymentMethod}</p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -300,8 +361,18 @@ export function VoiceButton() {
             <Button variant="outline" onClick={handleCancel}>
               ❌ Cancel
             </Button>
-            <Button onClick={handleConfirm} className="bg-gradient-primary">
-              ✅ Confirm & Save
+            <Button
+              onClick={handleConfirm}
+              disabled={stage === "saving"}
+              className={transactionPreview?.type === "income"
+                ? "bg-green-600 hover:bg-green-700 text-white"
+                : "bg-primary hover:bg-primary/90"}
+            >
+              {stage === "saving" ? (
+                <><Loader2 className="h-4 w-4 animate-spin mr-2" />Saving...</>
+              ) : (
+                "✅ Confirm & Save"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

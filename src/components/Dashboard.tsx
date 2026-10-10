@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Mic, TrendingUp, TrendingDown, IndianRupee, PieChart, BarChart3 } from "lucide-react";
+import { TrendingUp, TrendingDown, IndianRupee, BarChart3 } from "lucide-react";
 import { IncomeExpenseChart } from "./charts/IncomeExpenseChart";
 import { ProfitLossChart } from "./charts/ProfitLossChart";
 import { CategoryChart } from "./charts/CategoryChart";
@@ -33,43 +32,41 @@ export function Dashboard() {
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    const fetchStats = async () => {
-      setLoading(true);
-      try {
-        const [statsRes, weeklyRes, categoryRes, growthRes] = await Promise.all([
-          axios.get(`${""}/api/stats`),
-          axios.get(`${""}/api/analytics/weekly-stats`),
-          axios.get(`${""}/api/analytics/spending`),
-          axios.get(`${""}/api/analytics/growth`)
-        ]);
+  const fetchStats = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [statsRes, weeklyRes, categoryRes, growthRes] = await Promise.all([
+        axios.get('/api/stats'),
+        axios.get('/api/analytics/weekly-stats'),
+        axios.get('/api/analytics/spending'),
+        axios.get('/api/analytics/growth')
+      ]);
 
-        const data = statsRes.data;
-        setStats({
-          income: data.income || 0,
-          expenses: data.expenses || 0,
-          profit: data.profit || 0,
-          transactions: data.transactions || 0
-        });
-        setRecentTransactions(Array.isArray(data.recentTransactions) ? data.recentTransactions : []);
-        setWeeklyStats(Array.isArray(weeklyRes.data) ? weeklyRes.data : []);
-        const topCats = Array.isArray(categoryRes.data?.topCategories) ? categoryRes.data.topCategories : [];
-        setCategoryData(topCats.map((cat: any) => ({ ...cat, value: cat.amount || 0 })));
-        setGrowth(growthRes.data || {
-          revenueGrowth: "0%",
-          expenseRatio: "0%",
-          profitMargin: "0%",
-          customerRetention: "0%"
-        });
-      } catch (error) {
-        console.error('Error fetching stats:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStats();
+      const data = statsRes.data;
+      setStats({
+        income: data.income || 0,
+        expenses: data.expenses || 0,
+        profit: data.profit || 0,
+        transactions: data.transactions || 0
+      });
+      setRecentTransactions(Array.isArray(data.recentTransactions) ? data.recentTransactions : []);
+      setWeeklyStats(Array.isArray(weeklyRes.data) ? weeklyRes.data : []);
+      const topCats = Array.isArray(categoryRes.data?.topCategories) ? categoryRes.data.topCategories : [];
+      setCategoryData(topCats.map((cat: any) => ({ ...cat, value: cat.amount || 0 })));
+      setGrowth(growthRes.data || {
+        revenueGrowth: "0%",
+        expenseRatio: "0%",
+        profitMargin: "0%",
+        customerRetention: "0%"
+      });
+    } catch (error) {
+      console.error('Error fetching stats:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => { fetchStats(); }, [fetchStats]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
@@ -211,8 +208,8 @@ export function Dashboard() {
         </Card>
       </div>
 
-      {/* Floating Voice Button */}
-      <VoiceButton />
+      {/* Floating Voice Button — refreshes dashboard on save */}
+      <VoiceButton onTransactionSaved={fetchStats} />
     </div>
   );
 }

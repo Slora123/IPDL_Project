@@ -58,7 +58,15 @@ const mockLoans = [
   { id: '2', name: 'New Deep Freezer EMI', amount: 35000, emiAmount: 2200, dueDate: '2026-09-20', status: 'active' },
 ];
 
+// Real Express backend (server/) now handles all /api/* calls via Vite proxy.
+// This mock is disabled. setupMockApi is kept as a no-op so existing imports don't break.
 export const setupMockApi = () => {
+  console.log('[MockAPI] DISABLED — real backend is active on port 3001');
+  // no monkey-patching; all axios calls go through the Vite proxy → Express
+};
+
+// Dead-code reference below (kept for documentation only):
+const _disabledMock = () => {
   const originalGet = axios.get;
   
   // @ts-ignore

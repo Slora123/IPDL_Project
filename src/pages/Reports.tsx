@@ -17,7 +17,7 @@ import { useToast } from "@/hooks/use-toast";
 // @ts-ignore
 import html2pdf from "html2pdf.js";
 
-const API_URL = 'http://localhost:3000';
+
 
 export default function Reports() {
   const [loading, setLoading] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export default function Reports() {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `${API_URL}/api/reports/generate/${reportId}`,
+        `/api/reports/generate/${reportId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );

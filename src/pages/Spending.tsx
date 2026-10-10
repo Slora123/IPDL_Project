@@ -6,7 +6,7 @@ import { TrendingDown } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import axios from "axios";
 
-const API_URL = "" || 'http://localhost:3000';
+
 
 export default function Spending() {
   const { t } = useI18n();
@@ -23,13 +23,13 @@ export default function Spending() {
       const token = localStorage.getItem('token');
 
       // Fetch today's stats
-      const statsRes = await axios.get(`${API_URL}/api/dashboard/stats`, {
+      const statsRes = await axios.get('/api/stats', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTodayExpenses(statsRes.data.expenses);
 
       // Fetch spending analytics
-      const analyticsRes = await axios.get(`${API_URL}/api/analytics/spending`, {
+      const analyticsRes = await axios.get('/api/analytics/spending', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTopCategories(analyticsRes.data.topCategories || []);

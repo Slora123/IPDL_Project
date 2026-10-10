@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Bell, Calendar, Clock, Plus, X } from "lucide-react";
 import axios from "axios";
 
-const API_URL = "" || 'http://localhost:3000';
+
 
 interface Loan {
   id: string;
@@ -34,7 +34,7 @@ export default function LoanAlert() {
   const fetchLoans = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get(`${API_URL}/api/loans`, {
+      const res = await axios.get(`/api/loans`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setLoans(res.data);
@@ -49,7 +49,7 @@ export default function LoanAlert() {
     e.preventDefault();
     try {
       const token = localStorage.getItem('token');
-      await axios.post(`${API_URL}/api/loans`, newLoan, {
+      await axios.post(`/api/loans`, newLoan, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNewLoan({ lender: "", amount: "", dueDate: "" });
@@ -63,7 +63,7 @@ export default function LoanAlert() {
   const handleToggleReminder = async (loan: Loan) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`${API_URL}/api/loans/${loan.id}`, {
+      await axios.put(`/api/loans/${loan.id}`, {
         ...loan,
         reminderEnabled: !loan.reminderEnabled
       }, {
@@ -78,7 +78,7 @@ export default function LoanAlert() {
   const handleDeleteLoan = async (id: string) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`${API_URL}/api/loans/${id}`, {
+      await axios.delete(`/api/loans/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchLoans();

@@ -30,7 +30,7 @@ import axios from "axios";
 import html2pdf from "html2pdf.js";
 
 
-const API_URL = "" || 'http://localhost:3000';
+
 
 export default function Analytics() {
   const [loading, setLoading] = useState(true);
@@ -56,9 +56,9 @@ export default function Analytics() {
 
       // Fetch all required analytics
       const [growthRes, spendingRes, weeklyRes] = await Promise.all([
-        axios.get(`${API_URL}/api/analytics/growth`),
-        axios.get(`${API_URL}/api/analytics/spending`),
-        axios.get(`${API_URL}/api/analytics/weekly-stats`)
+        axios.get('/api/analytics/growth'),
+        axios.get('/api/analytics/spending'),
+        axios.get('/api/analytics/weekly-stats')
       ]);
 
       const growth = growthRes.data || {};

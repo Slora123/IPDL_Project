@@ -63,15 +63,10 @@ export default function Transactions() {
 
   const fetchTransactions = async () => {
     const token = localStorage.getItem('token');
-    // if (!token) return; // Removed so mock API works without login
-
     try {
-      const response = await axios.get(
-        `${""}/api/transactions`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      const response = await axios.get('/api/transactions', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setTransactions(response.data);
     } catch (error) {
       console.error('Error fetching transactions:', error);
@@ -86,15 +81,10 @@ export default function Transactions() {
 
   const handleDelete = async (id: string) => {
     const token = localStorage.getItem('token');
-    // if (!token) return;
-
     try {
-      await axios.delete(
-        `${""}/api/transactions/${id}`,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
-      );
+      await axios.delete(`/api/transactions/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
       setTransactions(transactions.filter(t => t.id !== id));
     } catch (error) {
       console.error('Error deleting transaction:', error);
@@ -481,7 +471,7 @@ export default function Transactions() {
       </Card>
 
       {/* Floating Voice Button */}
-      <VoiceButton />
+      <VoiceButton onTransactionSaved={fetchTransactions} />
 
       {/* Manual Transaction Dialog */}
       <ManualTransactionDialog

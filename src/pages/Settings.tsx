@@ -22,7 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { usePreferences } from "@/contexts/PreferencesContext";
 import axios from "axios";
 
-const API_URL = "" || 'http://localhost:3000';
+
 
 export default function Settings() {
   const { name, businessName, phone, language, setName, setBusinessName, setPhone, setLanguage } = usePreferences();
@@ -79,7 +79,7 @@ export default function Settings() {
   const handleSaveSettings = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`${API_URL}/api/user/settings`, {
+      await axios.put(`/api/user/settings`, {
         voiceNotifications: settings.voiceNotifications,
         voiceAccuracy: settings.voiceAccuracy,
         autoRecord: settings.autoRecord,
