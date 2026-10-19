@@ -16,7 +16,7 @@ import analyticsRoutes from './routes/analytics.js';
 import voiceRoutes from './routes/voice.js';
 import billRoutes from './routes/bills.js';
 import stubRoutes from './routes/stubs.js';
-import authRoutes from './routes/auth.js';
+import authRoutes, { requireAuth } from './routes/auth.js';
 import { getSummary } from './services/db.js';
 
 const _here = path.dirname(fileURLToPath(import.meta.url));
@@ -63,20 +63,20 @@ app.get('/', (_req, res) => res.json({
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 app.get('/health',     (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
-// Dashboard stats (matched by Dashboard.tsx: /api/stats)
-app.get('/api/stats', (_req, res) => res.json(getSummary()));
+// Dashboard stats — requires auth, filtered by the authenticated user's ID
+app.get('/api/stats', requireAuth, (req, res) => res.json(getSummary(req.user.id)));
 
-// Analytics routes
+// Analytics routes (auth applied inside the router)
 app.use('/api/analytics', analyticsRoutes);
 
-// Transaction CRUD
+// Transaction CRUD (auth applied inside the router)
 app.use('/api/transactions', transactionRoutes);
 
-// Voice/NLP processing
-app.use('/api/voice', voiceRoutes);
+// Voice/NLP processing — requires auth
+app.use('/api/voice', requireAuth, voiceRoutes);
 
-// Bill scanning + confirmation
-app.use('/api/bills', billRoutes);
+// Bill scanning + confirmation — requires auth
+app.use('/api/bills', requireAuth, billRoutes);
 
 // Stub routes (loans, reports, user settings) — must come after specific routes
 app.use('/api', stubRoutes);
