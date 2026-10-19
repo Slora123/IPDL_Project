@@ -61,25 +61,34 @@ if (!txCols.includes('userId')) {
   db.exec('ALTER TABLE transactions ADD COLUMN userId TEXT;');
   console.log('[DB] Migration: added userId column to transactions');
 }
+if (!txCols.includes('billImage')) {
+  db.exec('ALTER TABLE transactions ADD COLUMN billImage TEXT;');
+  console.log('[DB] Migration: added billImage column to transactions');
+}
 // Existing rows keep userId=NULL — they are treated as orphaned and never
 // exposed to any authenticated user (all queries filter WHERE userId=?).
 
 // Step 3: Create indexes (now that userId column definitely exists).
 db.exec(`
-  CREATE INDEX IF NOT EXISTS idx_transactions_date   ON transactions(date);
-  CREATE INDEX IF NOT EXISTS idx_transactions_type   ON transactions(type);
-  CREATE INDEX IF NOT EXISTS idx_transactions_userId ON transactions(userId);
-  CREATE INDEX IF NOT EXISTS idx_users_email         ON users(email);
+  CREATE INDEX IF NOT EXISTS idx_transactions_date    ON transactions(date);
+  CREATE INDEX IF NOT EXISTS idx_transactions_type    ON transactions(type);
+  CREATE INDEX IF NOT EXISTS idx_transactions_userId  ON transactions(userId);
+  CREATE INDEX IF NOT EXISTS idx_transactions_billRef ON transactions(billRef);
+  CREATE INDEX IF NOT EXISTS idx_users_email          ON users(email);
 `);
 
 // ── Prepared statements ──────────────────────────────────────────────────────
 const stmtInsert = db.prepare(`
   INSERT INTO transactions
     (id,userId,type,amount,currency,item,category,date,time,language,
-     paymentMethod,source,merchant,voiceInput,billRef,createdAt,updatedAt)
+     paymentMethod,source,merchant,voiceInput,billRef,billImage,createdAt,updatedAt)
   VALUES
-    (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 `);
+
+const stmtBillRefExists = db.prepare(
+  'SELECT 1 FROM transactions WHERE userId=? AND billRef=? AND type=? LIMIT 1'
+);
 
 // All SELECT/UPDATE/DELETE statements filter by userId — never by id alone
 const stmtAllForUser    = db.prepare(`SELECT * FROM transactions WHERE userId=? ORDER BY date DESC, createdAt DESC`);
@@ -128,7 +137,8 @@ export function createTransaction(userId, data) {
     data.source || 'manual',
     data.merchant || null,
     data.voiceInput || null,
-    data.billRef || null,
+    data.billRef    || null,
+    data.billImage  || null,
     now, now
   );
 
@@ -139,6 +149,13 @@ export function createTransaction(userId, data) {
 export function getAllTransactions(userId) {
   if (!userId) return [];
   return stmtAllForUser.all(userId).map(parseRow);
+}
+
+// Returns true if this user already has a transaction with the given billRef+type.
+// Used to prevent duplicate saves from the Scan Bill screen.
+export function billRefExistsForUser(userId, billRef, type) {
+  if (!userId || !billRef) return false;
+  return !!stmtBillRefExists.get(userId, billRef, type);
 }
 
 export function getTransactionById(id, userId) {
