@@ -16,6 +16,7 @@ import analyticsRoutes from './routes/analytics.js';
 import voiceRoutes from './routes/voice.js';
 import billRoutes from './routes/bills.js';
 import stubRoutes from './routes/stubs.js';
+import authRoutes from './routes/auth.js';
 import { getSummary } from './services/db.js';
 
 const _here = path.dirname(fileURLToPath(import.meta.url));
@@ -46,6 +47,9 @@ app.use((req, _res, next) => {
 });
 
 // -- routes -------------------------------------------------------------------
+
+// Auth (register / login / me) — public, no auth middleware needed on these routes
+app.use('/api/auth', authRoutes);
 
 // Root route — confirms the server is up (Render / browser check)
 app.get('/', (_req, res) => res.json({

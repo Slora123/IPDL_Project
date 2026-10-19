@@ -6,8 +6,11 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { PreferencesProvider, usePreferences } from "@/contexts/PreferencesContext";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { AuthProvider } from "@/contexts/AuthContext";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Layout } from "./pages/Layout";
+import AuthPage from "./pages/AuthPage";
 import Index from "./pages/Index";
 import Analytics from "./pages/Analytics";
 import Transactions from "./pages/Transactions";
@@ -24,6 +27,15 @@ import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
+// Helper: wraps a page in Layout + ProtectedRoute
+function Protected({ children }: { children: React.ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <Layout>{children}</Layout>
+    </ProtectedRoute>
+  );
+}
+
 const AppContent = () => {
   const { language, name, businessName, phone } = usePreferences();
   const needsOnboarding = !language || !name || !businessName || !phone;
@@ -31,70 +43,27 @@ const AppContent = () => {
   return (
     <>
       <Routes>
-        <Route path="/" element={
-          <Layout>
-            <Index />
-          </Layout>
-        } />
-        <Route path="/analytics" element={
-          <Layout>
-            <Analytics />
-          </Layout>
-        } />
-        <Route path="/transactions" element={
-          <Layout>
-            <Transactions />
-          </Layout>
-        } />
-        <Route path="/reports" element={
-          <Layout>
-            <Reports />
-          </Layout>
-        } />
-        <Route path="/spending" element={
-          <Layout>
-            <Spending />
-          </Layout>
-        } />
-        <Route path="/loan-alert" element={
-          <Layout>
-            <LoanAlert />
-          </Layout>
-        } />
-        <Route path="/learn" element={
-          <Layout>
-            <Learn />
-          </Layout>
-        } />
-        <Route path="/insights" element={
-          <Layout>
-            <GrowthInsights />
-          </Layout>
-        } />
-        <Route path="/settings" element={
-          <Layout>
-            <Settings />
-          </Layout>
-        } />
-        <Route path="/help" element={
-          <Layout>
-            <Help />
-          </Layout>
-        } />
-        <Route path="/scan" element={
-          <Layout>
-            <ScanBill />
-          </Layout>
-        } />
-        <Route path="/trending" element={
-          <Layout>
-            <Trending />
-          </Layout>
-        } />
-        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        {/* ── Public ───────────────────────────────────────────────────── */}
+        <Route path="/login" element={<AuthPage />} />
+
+        {/* ── Protected ────────────────────────────────────────────────── */}
+        <Route path="/"           element={<Protected><Index /></Protected>} />
+        <Route path="/analytics"  element={<Protected><Analytics /></Protected>} />
+        <Route path="/transactions" element={<Protected><Transactions /></Protected>} />
+        <Route path="/reports"    element={<Protected><Reports /></Protected>} />
+        <Route path="/spending"   element={<Protected><Spending /></Protected>} />
+        <Route path="/loan-alert" element={<Protected><LoanAlert /></Protected>} />
+        <Route path="/learn"      element={<Protected><Learn /></Protected>} />
+        <Route path="/insights"   element={<Protected><GrowthInsights /></Protected>} />
+        <Route path="/settings"   element={<Protected><Settings /></Protected>} />
+        <Route path="/help"       element={<Protected><Help /></Protected>} />
+        <Route path="/scan"       element={<Protected><ScanBill /></Protected>} />
+        <Route path="/trending"   element={<Protected><Trending /></Protected>} />
+
+        {/* ── 404 ──────────────────────────────────────────────────────── */}
         <Route path="*" element={<NotFound />} />
       </Routes>
-      <OnboardingDialog open={Boolean(needsOnboarding)} onClose={() => { }} />
+      <OnboardingDialog open={Boolean(needsOnboarding)} onClose={() => {}} />
     </>
   );
 };
@@ -104,13 +73,15 @@ const App = () => (
     <PreferencesProvider>
       <I18nProvider>
         <ThemeProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <AppContent />
-            </BrowserRouter>
-          </TooltipProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <BrowserRouter>
+                <AppContent />
+              </BrowserRouter>
+            </TooltipProvider>
+          </AuthProvider>
         </ThemeProvider>
       </I18nProvider>
     </PreferencesProvider>
