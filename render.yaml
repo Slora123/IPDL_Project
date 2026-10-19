@@ -1,0 +1,54 @@
+# render.yaml — Declarative Render deployment for Trackify backend
+# Docs: https://render.com/docs/blueprint-spec
+#
+# This file configures the Express backend only.
+# The React/Vite frontend is deployed separately on Vercel.
+#
+# HOW TO USE:
+#   1. Push this file to GitHub (branch: new_main).
+#   2. In Render dashboard → New → Blueprint → connect IPDL_Project repo.
+#   3. Render will read this file and create the service automatically.
+#   4. After the first deploy, go to the service's Environment tab and fill in:
+#        SARVAM_API_KEY, GEMINI_API_KEY, ALLOWED_ORIGIN, DB_PATH
+#      (PORT is set by Render automatically — do NOT add it manually.)
+
+services:
+  - type: web
+    name: trackify-backend
+    runtime: node
+    region: singapore          # closest region for Mumbai users
+    plan: free                 # upgrade to Starter ($7/mo) for persistent disk
+    branch: new_main
+    rootDir: .                 # repository root
+
+    # Render reads .nvmrc to select Node version (22 → node:sqlite compatible)
+    # Build step: install all dependencies (including devDependencies for any build tools)
+    buildCommand: npm install
+
+    # Start command: no --experimental-sqlite needed on Node 22.5+,
+    # but kept for safety with any Node 22.x patch version below 22.5
+    startCommand: node --experimental-sqlite src/server/index.js
+
+    # Health check — Render pings this to decide if the deploy succeeded
+    healthCheckPath: /api/health
+
+    # Environment variables (set values in the Render dashboard, not here)
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_PATH
+        value: /var/data/trackify.db   # matches the disk mount path below
+      - key: ALLOWED_ORIGIN
+        sync: false                     # fill in your Vercel URL in the dashboard
+      - key: SARVAM_API_KEY
+        sync: false                     # fill in the dashboard
+      - key: GEMINI_API_KEY
+        sync: false                     # fill in the dashboard
+
+    # Persistent disk — REQUIRED to keep SQLite data across deploys and restarts.
+    # Free plan does NOT support disks. Upgrade to Starter ($7/mo) to enable this.
+    # If you stay on the free plan, the database resets on every deploy.
+    disk:
+      name: trackify-data
+      mountPath: /var/data
+      sizeGB: 1

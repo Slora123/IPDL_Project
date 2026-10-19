@@ -20,7 +20,7 @@ import { getSummary } from './services/db.js';
 
 const _here = path.dirname(fileURLToPath(import.meta.url));
 
-// Railway sets PORT automatically. Fallback to 3001 for local dev.
+// Render sets PORT automatically. Fallback to 3001 for local dev.
 const PORT = process.env.PORT || 3001;
 
 // ALLOWED_ORIGIN: set to your Vercel frontend URL in production
