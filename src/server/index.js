@@ -46,6 +46,19 @@ app.use((req, _res, next) => {
 });
 
 // -- routes -------------------------------------------------------------------
+
+// Root route — confirms the server is up (Render / browser check)
+app.get('/', (_req, res) => res.json({
+  service: 'Trackify API',
+  status: 'ok',
+  docs: 'Use /api/* endpoints. See /api/health for uptime check.',
+}));
+
+// Health check — registered early, before any catch-all stub routes
+// Render pings /api/health (configured in render.yaml healthCheckPath)
+app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+app.get('/health',     (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
+
 // Dashboard stats (matched by Dashboard.tsx: /api/stats)
 app.get('/api/stats', (_req, res) => res.json(getSummary()));
 
@@ -61,11 +74,8 @@ app.use('/api/voice', voiceRoutes);
 // Bill scanning + confirmation
 app.use('/api/bills', billRoutes);
 
-// Stub routes (loans, reports, user settings)
+// Stub routes (loans, reports, user settings) — must come after specific routes
 app.use('/api', stubRoutes);
-
-// Health check — useful for Railway uptime checks
-app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
 // 404
 app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
@@ -76,7 +86,10 @@ app.use((err, _req, res, _next) => {
   res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
 });
 
-app.listen(PORT, () => {
+// Bind to 0.0.0.0 — required on Render so the reverse proxy can reach the container.
+// Binding to 127.0.0.1 (the default when host is omitted) would make Render health
+// checks time out and the deploy would be marked as failed.
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n🚀 Trackify Server running on port ${PORT}`);
   console.log(`   ✅ Transactions: POST/GET /api/transactions`);
   console.log(`   ✅ Analytics:    GET /api/stats, /api/analytics/*`);
