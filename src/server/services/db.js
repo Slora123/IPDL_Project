@@ -54,6 +54,11 @@ const stmtUpdate = db.prepare(`
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 const toISO = () => new Date().toISOString();
+
+// Returns today's date as YYYY-MM-DD in local time (not UTC)
+const localDateStr = (d = new Date()) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
 const timeStr = (d = new Date()) =>
   d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
@@ -67,8 +72,9 @@ function parseRow(r) {
 export function createTransaction(data) {
   const id = randomUUID();
   const now = toISO();
-  const date = data.date || now.slice(0, 10);
-  const time = data.time || timeStr(new Date(date));
+  // Use local date (not UTC) so IST users get the correct date
+  const date = data.date || localDateStr();
+  const time = data.time || timeStr();
 
   stmtInsert.run(
     id,
@@ -128,14 +134,67 @@ export function deleteTransaction(id) {
 
 export function getSummary() {
   const txs = getAllTransactions();
-  const income = txs.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-  const expenses = txs.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+
+  // today / yesterday date strings (YYYY-MM-DD) in local time
+  const todayDate = new Date();
+  const todayStr = localDateStr(todayDate);
+  const yestDate = new Date(todayDate);
+  yestDate.setDate(yestDate.getDate() - 1);
+  const yesterdayStr = localDateStr(yestDate);
+
+  const todayTxs = txs.filter(t => t.date === todayStr);
+  const yesterdayTxs = txs.filter(t => t.date === yesterdayStr);
+
+  const sum = (arr, type) => arr.filter(t => t.type === type).reduce((s, t) => s + t.amount, 0);
+
+  const todayIncome   = sum(todayTxs, 'income');
+  const todayExpenses = sum(todayTxs, 'expense');
+  const yestIncome    = sum(yesterdayTxs, 'income');
+  const yestExpenses  = sum(yesterdayTxs, 'expense');
+
+  const pctChange = (today, yesterday) => {
+    if (yesterday === 0 && today === 0) return '0%';
+    if (yesterday === 0) return '+100%';
+    const pct = ((today - yesterday) / yesterday * 100).toFixed(0);
+    return (pct >= 0 ? `+${pct}` : `${pct}`) + '%';
+  };
+
+  // All transactions (most recent 6) for the dashboard recent list
+  const recentTransactions = txs.slice(0, 6);
+
   return {
-    income,
-    expenses,
-    profit: income - expenses,
-    transactions: txs.length,
-    recentTransactions: txs.slice(0, 6)
+    // Today-only stats (what the dashboard "Today's Income / Expenses" cards show)
+    income:        todayIncome,
+    expenses:      todayExpenses,
+    profit:        todayIncome - todayExpenses,
+    transactions:  todayTxs.length,
+
+    // Yesterday's baseline (for trend badges)
+    yesterday: {
+      income:        yestIncome,
+      expenses:      yestExpenses,
+      profit:        yestIncome - yestExpenses,
+      transactions:  yesterdayTxs.length,
+    },
+
+    // Percentage-change strings  e.g. "+23%" / "-5%"
+    trends: {
+      income:       pctChange(todayIncome,   yestIncome),
+      expenses:     pctChange(todayExpenses,  yestExpenses),
+      profit:       pctChange(todayIncome - todayExpenses, yestIncome - yestExpenses),
+      transactions: pctChange(todayTxs.length, yesterdayTxs.length),
+    },
+
+    // All-time totals (for other analytics pages that still need them)
+    allTime: {
+      income:       sum(txs, 'income'),
+      expenses:     sum(txs, 'expense'),
+      transactions: txs.length,
+    },
+
+    recentTransactions,
+    todayStr,
+    yesterdayStr,
   };
 }
 
@@ -145,7 +204,7 @@ export function getWeeklyStats() {
   const map = {};
   for (let i = 6; i >= 0; i--) {
     const d = new Date(); d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
+    const key = localDateStr(d);
     map[key] = { name: days[d.getDay()], income: 0, expense: 0, profit: 0 };
   }
   for (const t of txs) {
@@ -181,10 +240,10 @@ export function getCategorySpending() {
 
 export function getGrowthMetrics() {
   const txs = getAllTransactions();
-  const today = new Date().toISOString().slice(0, 10);
+  const today = localDateStr();
   const thisMonth = today.slice(0, 7);
   const lastMonthDate = new Date(); lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
-  const lastMonth = lastMonthDate.toISOString().slice(0, 7);
+  const lastMonth = localDateStr(lastMonthDate).slice(0, 7);
 
   const sum = (arr, type) => arr.filter(t => t.type === type).reduce((s, t) => s + t.amount, 0);
 

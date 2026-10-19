@@ -21,11 +21,11 @@ export function Dashboard() {
     profit: 0,
     transactions: 0
   });
-  const [growth, setGrowth] = useState({
-    revenueGrowth: "0%",
-    expenseRatio: "0%",
-    profitMargin: "0%",
-    customerRetention: "0%"
+  const [trends, setTrends] = useState({
+    income: "0%",
+    expenses: "0%",
+    profit: "0%",
+    transactions: "0%",
   });
   const [weeklyStats, setWeeklyStats] = useState<any[]>([]);
   const [categoryData, setCategoryData] = useState<any[]>([]);
@@ -35,29 +35,32 @@ export function Dashboard() {
   const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
-      const [statsRes, weeklyRes, categoryRes, growthRes] = await Promise.all([
+      const [statsRes, weeklyRes, categoryRes] = await Promise.all([
         axios.get('/api/stats'),
         axios.get('/api/analytics/weekly-stats'),
         axios.get('/api/analytics/spending'),
-        axios.get('/api/analytics/growth')
       ]);
 
       const data = statsRes.data;
+      // income / expenses / profit / transactions are TODAY-ONLY from the server
       setStats({
-        income: data.income || 0,
-        expenses: data.expenses || 0,
-        profit: data.profit || 0,
-        transactions: data.transactions || 0
+        income:       data.income       || 0,
+        expenses:     data.expenses     || 0,
+        profit:       data.profit       || 0,
+        transactions: data.transactions || 0,
       });
       setRecentTransactions(Array.isArray(data.recentTransactions) ? data.recentTransactions : []);
       setWeeklyStats(Array.isArray(weeklyRes.data) ? weeklyRes.data : []);
       const topCats = Array.isArray(categoryRes.data?.topCategories) ? categoryRes.data.topCategories : [];
       setCategoryData(topCats.map((cat: any) => ({ ...cat, value: cat.amount || 0 })));
-      setGrowth(growthRes.data || {
-        revenueGrowth: "0%",
-        expenseRatio: "0%",
-        profitMargin: "0%",
-        customerRetention: "0%"
+
+      // Server-computed today-vs-yesterday percentage-change strings
+      const tr = data.trends || {};
+      setTrends({
+        income:       tr.income       || "0%",
+        expenses:     tr.expenses     || "0%",
+        profit:       tr.profit       || "0%",
+        transactions: tr.transactions || "0%",
       });
     } catch (error) {
       console.error('Error fetching stats:', error);
@@ -87,14 +90,14 @@ export function Dashboard() {
             title={t("todays_income", "dashboard")}
             value={`₹${stats.income.toLocaleString()}`}
             icon={TrendingUp}
-            trend={growth.revenueGrowth}
+            trend={trends.income}
             className="bg-gradient-success"
           />
           <StatsCard
             title={t("todays_expenses", "dashboard")}
             value={`₹${stats.expenses.toLocaleString()}`}
             icon={TrendingDown}
-            trend={growth.expenseRatio}
+            trend={trends.expenses}
             variant="expense"
           />
           {persona === "business" && (
@@ -102,7 +105,7 @@ export function Dashboard() {
               title={t("net_profit", "dashboard")}
               value={`₹${stats.profit.toLocaleString()}`}
               icon={IndianRupee}
-              trend={growth.profitMargin}
+              trend={trends.profit}
               className="bg-gradient-primary"
             />
           )}
@@ -110,7 +113,7 @@ export function Dashboard() {
             title={t("transactions", "dashboard")}
             value={stats.transactions.toString()}
             icon={BarChart3}
-            trend={`${stats.transactions > 0 ? '+' : ''}${stats.transactions}`}
+            trend={trends.transactions}
             variant="neutral"
           />
         </div>
@@ -169,7 +172,7 @@ export function Dashboard() {
                   >
                     <div className="min-w-0 flex-1">
                       <p className="font-medium truncate" title={transaction.item}>{transaction.item}</p>
-                      <p className="text-sm text-muted-foreground">{transaction.time}</p>
+                      <p className="text-sm text-muted-foreground">{transaction.date} · {transaction.time}</p>
                     </div>
                     <div className={`text-right shrink-0 ${transaction.type === 'income' ? 'text-success' : 'text-destructive'
                       }`}>

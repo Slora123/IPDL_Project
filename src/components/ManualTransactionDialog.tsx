@@ -36,7 +36,7 @@ export function ManualTransactionDialog({
         amount: "",
         type: "expense",
         category: "General",
-        date: new Date().toISOString().split("T")[0],
+        date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
         language: "english",
     });
 
@@ -68,7 +68,7 @@ export function ManualTransactionDialog({
                 amount: "",
                 type: "expense",
                 category: "General",
-                date: new Date().toISOString().split("T")[0],
+                date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
                 language: "english",
             });
         } catch (error: any) {

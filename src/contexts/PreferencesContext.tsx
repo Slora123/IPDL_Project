@@ -8,6 +8,8 @@ interface PreferencesState {
   name: string | null;
   businessName: string | null;
   phone: string | null;
+  location: string | null;
+  shopCategory: string | null;
 }
 
 interface PreferencesContextValue extends PreferencesState {
@@ -16,6 +18,8 @@ interface PreferencesContextValue extends PreferencesState {
   setName: (name: string) => void;
   setBusinessName: (businessName: string) => void;
   setPhone: (phone: string) => void;
+  setLocation: (location: string) => void;
+  setShopCategory: (shopCategory: string) => void;
   resetPreferences: () => void;
 }
 
@@ -34,12 +38,14 @@ const getInitialPreferences = (): PreferencesState => {
         name: parsed.name || null,
         businessName: parsed.businessName || null,
         phone: parsed.phone || null,
+        location: parsed.location || null,
+        shopCategory: parsed.shopCategory || null,
       };
     }
   } catch {
     // ignore
   }
-  return { language: null, persona: "business", name: null, businessName: null, phone: null };
+  return { language: null, persona: "business", name: null, businessName: null, phone: null, location: null, shopCategory: null };
 };
 
 export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -48,35 +54,25 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [name, setNameState] = useState<string | null>(() => getInitialPreferences().name);
   const [businessName, setBusinessNameState] = useState<string | null>(() => getInitialPreferences().businessName);
   const [phone, setPhoneState] = useState<string | null>(() => getInitialPreferences().phone);
+  const [location, setLocationState] = useState<string | null>(() => getInitialPreferences().location);
+  const [shopCategory, setShopCategoryState] = useState<string | null>(() => getInitialPreferences().shopCategory);
 
   useEffect(() => {
     try {
-      const state: PreferencesState = { language, persona, name, businessName, phone };
+      const state: PreferencesState = { language, persona, name, businessName, phone, location, shopCategory };
       localStorage.setItem(PREFERENCES_STORAGE_KEY, JSON.stringify(state));
     } catch {
       // ignore
     }
-  }, [language, persona, name, businessName, phone]);
+  }, [language, persona, name, businessName, phone, location, shopCategory]);
 
-  const setLanguage = useCallback((lng: string) => {
-    setLanguageState(lng);
-  }, []);
-
-  const setPersona = useCallback((p: PersonaType) => {
-    setPersonaState(p);
-  }, []);
-
-  const setName = useCallback((n: string) => {
-    setNameState(n);
-  }, []);
-
-  const setBusinessName = useCallback((b: string) => {
-    setBusinessNameState(b);
-  }, []);
-
-  const setPhone = useCallback((ph: string) => {
-    setPhoneState(ph);
-  }, []);
+  const setLanguage = useCallback((lng: string) => { setLanguageState(lng); }, []);
+  const setPersona = useCallback((p: PersonaType) => { setPersonaState(p); }, []);
+  const setName = useCallback((n: string) => { setNameState(n); }, []);
+  const setBusinessName = useCallback((b: string) => { setBusinessNameState(b); }, []);
+  const setPhone = useCallback((ph: string) => { setPhoneState(ph); }, []);
+  const setLocation = useCallback((loc: string) => { setLocationState(loc); }, []);
+  const setShopCategory = useCallback((cat: string) => { setShopCategoryState(cat); }, []);
 
   const resetPreferences = useCallback(() => {
     setLanguageState(null);
@@ -84,6 +80,8 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     setNameState(null);
     setBusinessNameState(null);
     setPhoneState(null);
+    setLocationState(null);
+    setShopCategoryState(null);
   }, []);
 
   const value = useMemo<PreferencesContextValue>(() => ({
@@ -92,13 +90,18 @@ export const PreferencesProvider: React.FC<{ children: React.ReactNode }> = ({ c
     name,
     businessName,
     phone,
+    location,
+    shopCategory,
     setLanguage,
     setPersona,
     setName,
     setBusinessName,
     setPhone,
+    setLocation,
+    setShopCategory,
     resetPreferences,
-  }), [language, persona, name, businessName, phone, setLanguage, setPersona, setName, setBusinessName, setPhone, resetPreferences]);
+  }), [language, persona, name, businessName, phone, location, shopCategory,
+      setLanguage, setPersona, setName, setBusinessName, setPhone, setLocation, setShopCategory, resetPreferences]);
 
   return (
     <PreferencesContext.Provider value={value}>
@@ -114,5 +117,3 @@ export const usePreferences = (): PreferencesContextValue => {
 };
 
 export type { PersonaType };
-
-

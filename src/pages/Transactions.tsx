@@ -119,16 +119,43 @@ export default function Transactions() {
     return matchesSearch && matchesType && matchesCategory && matchesDateRange();
   });
 
-  // Get today's and yesterday's dates dynamically
+  // Get today's and yesterday's dates dynamically — use LOCAL date not UTC
+  const toLocalDateStr = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
   const today = new Date();
-  const todayStr = today.toISOString().split('T')[0]; // YYYY-MM-DD format
+  const todayStr = toLocalDateStr(today);
 
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayStr = yesterday.toISOString().split('T')[0];
+  const yesterdayStr = toLocalDateStr(yesterday);
+
 
   const todayTransactions = filteredTransactions.filter(t => t.date === todayStr);
   const yesterdayTransactions = filteredTransactions.filter(t => t.date === yesterdayStr);
+
+  // Group ALL filtered transactions by date for the "All" tab
+  const transactionsByDate: Record<string, Transaction[]> = {};
+  for (const tx of filteredTransactions) {
+    if (!transactionsByDate[tx.date]) transactionsByDate[tx.date] = [];
+    transactionsByDate[tx.date].push(tx);
+  }
+  // Sorted newest-first
+  const sortedDateGroups = Object.keys(transactionsByDate).sort((a, b) => b.localeCompare(a));
+
+  const formatDateLabel = (dateStr: string) => {
+    if (dateStr === todayStr) return t('todays_transactions', 'dashboard');
+    if (dateStr === yesterdayStr) return t('yesterdays_transactions', 'dashboard');
+    // Format as "Mon, 10 Oct 2026" etc.
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  };
+
+  const getDateBadgeVariant = (dateStr: string) => {
+    if (dateStr === todayStr) return 'default' as const;
+    if (dateStr === yesterdayStr) return 'secondary' as const;
+    return 'outline' as const;
+  };
 
   const getTypeColor = (type: Transaction["type"]) => {
     return type === "income" ? "text-success" : "text-destructive";
@@ -362,35 +389,25 @@ export default function Transactions() {
 
         <TabsContent value="all" className="space-y-4">
           <div className="space-y-6">
-            {/* Today's Transactions */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-lg font-semibold">{t('todays_transactions', 'dashboard')}</h2>
-                <Badge className="bg-primary/10 text-primary">
-                  {todayTransactions.length}
-                </Badge>
-              </div>
-              <div className="space-y-3">
-                {todayTransactions.map(transaction => (
-                  <TransactionCard key={transaction.id} transaction={transaction} />
-                ))}
-              </div>
-            </div>
-
-            {/* Yesterday's Transactions */}
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <h2 className="text-lg font-semibold">{t('yesterdays_transactions', 'dashboard')}</h2>
-                <Badge variant="secondary">
-                  {yesterdayTransactions.length}
-                </Badge>
-              </div>
-              <div className="space-y-3">
-                {yesterdayTransactions.map(transaction => (
-                  <TransactionCard key={transaction.id} transaction={transaction} />
-                ))}
-              </div>
-            </div>
+            {sortedDateGroups.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">No transactions found</p>
+            ) : (
+              sortedDateGroups.map(dateStr => (
+                <div key={dateStr}>
+                  <div className="flex items-center gap-2 mb-4">
+                    <h2 className="text-lg font-semibold">{formatDateLabel(dateStr)}</h2>
+                    <Badge variant={getDateBadgeVariant(dateStr)} className={dateStr === todayStr ? 'bg-primary/10 text-primary' : ''}>
+                      {transactionsByDate[dateStr].length}
+                    </Badge>
+                  </div>
+                  <div className="space-y-3">
+                    {transactionsByDate[dateStr].map(transaction => (
+                      <TransactionCard key={transaction.id} transaction={transaction} />
+                    ))}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </TabsContent>
 
