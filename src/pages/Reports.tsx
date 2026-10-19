@@ -12,7 +12,7 @@ import {
   Filter,
   Loader2
 } from "lucide-react";
-import axios from "axios";
+import api from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 // @ts-ignore
 import html2pdf from "html2pdf.js";
@@ -35,7 +35,7 @@ export default function Reports() {
     setLoading(reportId);
     try {
       const token = localStorage.getItem('token');
-      const response = await axios.post(
+      const response = await api.post(
         `/api/reports/generate/${reportId}`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }

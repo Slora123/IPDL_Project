@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import api from "@/lib/api";
 import {
     Dialog,
     DialogContent,
@@ -48,7 +48,7 @@ export function ManualTransactionDialog({
             const token = localStorage.getItem("token");
             console.log("Submitting transaction:", { ...formData, amount: parseFloat(formData.amount) });
 
-            const response = await axios.post(
+            const response = await api.post(
                 '/api/transactions',
                 {
                     ...formData,

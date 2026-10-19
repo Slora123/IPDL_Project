@@ -25,7 +25,7 @@ import {
 import { IncomeExpenseChart } from "@/components/charts/IncomeExpenseChart";
 import { ProfitLossChart } from "@/components/charts/ProfitLossChart";
 import { CategoryChart } from "@/components/charts/CategoryChart";
-import axios from "axios";
+import api from "@/lib/api";
 // @ts-ignore
 import html2pdf from "html2pdf.js";
 
@@ -56,9 +56,9 @@ export default function Analytics() {
 
       // Fetch all required analytics
       const [growthRes, spendingRes, weeklyRes] = await Promise.all([
-        axios.get('/api/analytics/growth'),
-        axios.get('/api/analytics/spending'),
-        axios.get('/api/analytics/weekly-stats')
+        api.get('/api/analytics/growth'),
+        api.get('/api/analytics/spending'),
+        api.get('/api/analytics/weekly-stats')
       ]);
 
       const growth = growthRes.data || {};

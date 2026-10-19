@@ -6,7 +6,11 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const dbPath = path.join(here, '../../trackify.db');
+
+// DB_PATH env var lets Railway point at a persistent volume (e.g. /data/trackify.db).
+// Falls back to project root for local dev — existing data is never overwritten.
+const dbPath = process.env.DB_PATH || path.join(here, '../../trackify.db');
+console.log(`[DB] SQLite path: ${dbPath}`);
 
 const db = new DatabaseSync(dbPath);
 

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +64,7 @@ export default function Transactions() {
   const fetchTransactions = async () => {
     const token = localStorage.getItem('token');
     try {
-      const response = await axios.get('/api/transactions', {
+      const response = await api.get('/api/transactions', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTransactions(response.data);
@@ -82,7 +82,7 @@ export default function Transactions() {
   const handleDelete = async (id: string) => {
     const token = localStorage.getItem('token');
     try {
-      await axios.delete(`/api/transactions/${id}`, {
+      await api.delete(`/api/transactions/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTransactions(transactions.filter(t => t.id !== id));

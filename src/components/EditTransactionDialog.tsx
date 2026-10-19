@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/lib/api";
 import {
     Dialog,
     DialogContent,
@@ -76,7 +76,7 @@ export function EditTransactionDialog({
             const token = localStorage.getItem("token");
             console.log("Updating transaction:", { ...formData, amount: parseFloat(formData.amount) });
 
-            const response = await axios.patch(
+            const response = await api.patch(
                 `/api/transactions/${transaction.id}`,
                 {
                     ...formData,

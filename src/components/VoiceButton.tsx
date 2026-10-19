@@ -12,7 +12,7 @@ import { Mic, MicOff, Loader2, CheckCircle, XCircle, Globe, TrendingUp, Trending
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { usePreferences } from "@/contexts/PreferencesContext";
-import axios from "axios";
+import api from "@/lib/api";
 
 type Stage =
   | "idle"
@@ -146,7 +146,7 @@ export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () =>
       formData.append('target_lang', language || 'en-IN');
 
       setStage("converting_english");
-      const response = await axios.post('/api/voice/process', formData, {
+      const response = await api.post('/api/voice/process', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
         timeout: 60000
       });
@@ -180,7 +180,7 @@ export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () =>
     if (!transactionPreview) return;
     setStage("saving");
     try {
-      await axios.post('/api/transactions', {
+      await api.post('/api/transactions', {
         ...transactionPreview,
         source: 'voice',
         voiceInput: transcript,

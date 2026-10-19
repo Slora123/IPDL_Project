@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Camera, Upload, Loader2, CheckCircle, Receipt, AlertCircle, Edit2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import axios from "axios";
+import api from "@/lib/api";
 
 interface BillItem {
   name: string;
@@ -98,7 +98,7 @@ export default function ScanBill() {
       formData.append("image", compressedBlob, "scanned-bill.jpg");
 
       setScanStage("analyzing");
-      const response = await axios.post("/api/bills/scan", formData, {
+      const response = await api.post("/api/bills/scan", formData, {
         headers: { "Content-Type": "multipart/form-data" },
         timeout: 60000,
       });
@@ -133,7 +133,7 @@ export default function ScanBill() {
 
     setIsSaving(true);
     try {
-      await axios.post("/api/bills/confirm", { transaction: editedResult });
+      await api.post("/api/bills/confirm", { transaction: editedResult });
       toast({
         title: "✅ Transaction Saved!",
         description: `₹${editedResult.total.toFixed(2)} expense from ${editedResult.vendorName || "Unknown Vendor"} recorded.`,

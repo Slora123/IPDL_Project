@@ -1,4 +1,4 @@
-// server/src/index.js
+// src/server/index.js
 // Unified Trackify backend — Express server integrating:
 //   - Transactions (CRUD + shared SQLite DB)
 //   - Analytics (dashboard stats, weekly, category, growth)
@@ -18,13 +18,24 @@ import billRoutes from './routes/bills.js';
 import stubRoutes from './routes/stubs.js';
 import { getSummary } from './services/db.js';
 
-const here = path.dirname(fileURLToPath(import.meta.url));
+const _here = path.dirname(fileURLToPath(import.meta.url));
+
+// Railway sets PORT automatically. Fallback to 3001 for local dev.
 const PORT = process.env.PORT || 3001;
+
+// ALLOWED_ORIGIN: set to your Vercel frontend URL in production
+//   e.g.  ALLOWED_ORIGIN=https://trackify-xyz.vercel.app
+// Leave unset (defaults to *) for local development.
+const allowedOrigin = process.env.ALLOWED_ORIGIN || '*';
 
 const app = express();
 
-// ── middleware ────────────────────────────────────────────────────────────────
-app.use(cors({ origin: '*', methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'] }));
+// -- middleware ----------------------------------------------------------------
+app.use(cors({
+  origin: allowedOrigin,
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -34,11 +45,11 @@ app.use((req, _res, next) => {
   next();
 });
 
-// ── routes ────────────────────────────────────────────────────────────────────
+// -- routes -------------------------------------------------------------------
 // Dashboard stats (matched by Dashboard.tsx: /api/stats)
 app.get('/api/stats', (_req, res) => res.json(getSummary()));
 
-// Analytics routes (matched by Dashboard.tsx)
+// Analytics routes
 app.use('/api/analytics', analyticsRoutes);
 
 // Transaction CRUD
@@ -53,7 +64,7 @@ app.use('/api/bills', billRoutes);
 // Stub routes (loans, reports, user settings)
 app.use('/api', stubRoutes);
 
-// Health check
+// Health check — useful for Railway uptime checks
 app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
 // 404
@@ -66,10 +77,11 @@ app.use((err, _req, res, _next) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`\n🚀 Trackify Server running on http://localhost:${PORT}`);
+  console.log(`\n🚀 Trackify Server running on port ${PORT}`);
   console.log(`   ✅ Transactions: POST/GET /api/transactions`);
   console.log(`   ✅ Analytics:    GET /api/stats, /api/analytics/*`);
   console.log(`   ✅ Voice/NLP:    POST /api/voice/process (SarvamAI)`);
   console.log(`   ✅ Bill OCR:     POST /api/bills/scan (Gemini), POST /api/bills/confirm`);
-  console.log(`   ✅ Database:     SQLite at server/trackify.db\n`);
+  console.log(`   ✅ CORS origin:  ${allowedOrigin}`);
+  console.log(`   ✅ Health:       GET /api/health\n`);
 });

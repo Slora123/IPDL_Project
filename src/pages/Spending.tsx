@@ -4,7 +4,7 @@ import { CategoryChart } from "@/components/charts/CategoryChart";
 import { StatsCard } from "@/components/StatsCard";
 import { TrendingDown } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
-import axios from "axios";
+import api from "@/lib/api";
 
 
 
@@ -23,13 +23,13 @@ export default function Spending() {
       const token = localStorage.getItem('token');
 
       // Fetch today's stats
-      const statsRes = await axios.get('/api/stats', {
+      const statsRes = await api.get('/api/stats', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTodayExpenses(statsRes.data.expenses);
 
       // Fetch spending analytics
-      const analyticsRes = await axios.get('/api/analytics/spending', {
+      const analyticsRes = await api.get('/api/analytics/spending', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTopCategories(analyticsRes.data.topCategories || []);

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import api from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, IndianRupee, BarChart3 } from "lucide-react";
 import { IncomeExpenseChart } from "./charts/IncomeExpenseChart";
@@ -36,9 +36,9 @@ export function Dashboard() {
     setLoading(true);
     try {
       const [statsRes, weeklyRes, categoryRes] = await Promise.all([
-        axios.get('/api/stats'),
-        axios.get('/api/analytics/weekly-stats'),
-        axios.get('/api/analytics/spending'),
+        api.get('/api/stats'),
+        api.get('/api/analytics/weekly-stats'),
+        api.get('/api/analytics/spending'),
       ]);
 
       const data = statsRes.data;

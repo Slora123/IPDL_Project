@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePreferences } from "@/contexts/PreferencesContext";
-import axios from "axios";
+import api from "@/lib/api";
 
 
 
@@ -79,7 +79,7 @@ export default function Settings() {
   const handleSaveSettings = async () => {
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`/api/user/settings`, {
+      await api.put(`/api/user/settings`, {
         voiceNotifications: settings.voiceNotifications,
         voiceAccuracy: settings.voiceAccuracy,
         autoRecord: settings.autoRecord,

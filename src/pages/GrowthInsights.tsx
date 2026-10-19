@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import api from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, IndianRupee, Users, Target, BarChart3 } from "lucide-react";
 
@@ -24,7 +24,7 @@ export default function GrowthInsights() {
         const fetchGrowthData = async () => {
             try {
                 setLoading(true);
-                const response = await axios.get(`${""}/api/analytics/growth`);
+                const response = await api.get(`${""}/api/analytics/growth`);
 
                 const data = response.data || {};
                 const revenueGrowth = data.revenueGrowth || "0%";
