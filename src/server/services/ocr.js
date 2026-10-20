@@ -4,6 +4,7 @@
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_MODEL = 'gemini-3.8-flash';
+const GEMINI_TIMEOUT_MS = 45_000;
 const MAX_BYTES = 10 * 1024 * 1024;
 const VALID_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
@@ -65,25 +66,38 @@ Never invent values. Use null for anything not present. Numbers must be plain nu
     required: ['isBill', 'confidence']
   };
 
-  const r = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`,
-    {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: prompt },
-            { inlineData: { mimeType, data: buf.toString('base64') } }
-          ]
-        }],
-        generationConfig: {
-          responseMimeType: 'application/json',
-          responseJsonSchema: schema
-        }
-      })
-    }
-  );
+  let r;
+  try {
+    r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
+        body: JSON.stringify({
+          contents: [{
+            parts: [
+              { text: prompt },
+              { inlineData: { mimeType, data: buf.toString('base64') } }
+            ]
+          }],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseJsonSchema: schema,
+            // OCR extraction is a straightforward structured task; low thinking
+            // avoids spending the browser's entire request window reasoning.
+            thinkingConfig: { thinkingLevel: 'low' },
+          }
+        })
+      }
+    );
+  } catch (error) {
+    const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+    throw Object.assign(new Error(timedOut ? 'Gemini request timed out.' : 'Gemini could not be reached.'), {
+      code: timedOut ? 'GEMINI_REQUEST_TIMEOUT' : 'GEMINI_NETWORK_ERROR',
+      status: timedOut ? 504 : 502,
+    });
+  }
 
   if (!r.ok) {
     // Keep provider response bodies out of logs and client errors; they can
