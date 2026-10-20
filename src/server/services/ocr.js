@@ -19,7 +19,12 @@ export function validateImageFile(file) {
  * Analyse image with Gemini vision (same logic as bill-ocr/server.js:analyse())
  */
 async function analyseWithGemini(buf, mimeType) {
-  if (!GEMINI_KEY) throw new Error('GEMINI_API_KEY not set in server/.env');
+  if (!GEMINI_KEY) {
+    throw Object.assign(new Error('GEMINI_API_KEY is not configured.'), {
+      code: 'GEMINI_API_KEY_MISSING',
+      status: 503,
+    });
+  }
 
   const today = new Date().toISOString().slice(0, 10);
   const prompt = `Decide whether the attached image is a genuine bill/receipt/invoice, and if so extract its details.
@@ -80,7 +85,15 @@ Never invent values. Use null for anything not present. Numbers must be plain nu
     }
   );
 
-  if (!r.ok) throw new Error(`Gemini ${r.status}: ${await r.text()}`);
+  if (!r.ok) {
+    // Keep provider response bodies out of logs and client errors; they can
+    // contain request details. The HTTP status is enough to diagnose config,
+    // quota, and provider failures safely.
+    throw Object.assign(new Error(`Gemini returned HTTP ${r.status}.`), {
+      code: `GEMINI_HTTP_${r.status}`,
+      status: 503,
+    });
+  }
   const out = await r.json();
   return JSON.parse(out.candidates[0].content.parts[0].text);
 }

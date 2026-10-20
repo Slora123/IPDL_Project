@@ -62,7 +62,17 @@ router.post('/scan', upload.single('image'), async (req, res) => {
       errorName: e?.name || 'Error',
       errorCode: e?.code || 'UNKNOWN',
     });
-    res.status(500).json({ error: 'Could not process this bill. Please try again later.', requestId: req.id });
+    const missingKey = e?.code === 'GEMINI_API_KEY_MISSING';
+    const providerFailure = String(e?.code || '').startsWith('GEMINI_HTTP_');
+    res.status(e?.status || 502).json({
+      code: e?.code || 'BILL_SCAN_FAILED',
+      error: missingKey
+        ? 'Bill scanning is not configured on this server. Add GEMINI_API_KEY to the backend environment and restart it.'
+        : providerFailure
+          ? 'The bill scanning service is unavailable or misconfigured. Check the Gemini API key and quota, then try again.'
+          : 'Could not process this bill. Check the server connection and try again later.',
+      requestId: req.id,
+    });
   }
 });
 
