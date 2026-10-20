@@ -73,7 +73,7 @@ router.post('/scan', upload.single('image'), async (req, res) => {
       error: missingKey
         ? 'Bill scanning is not configured on this server. Add GEMINI_API_KEY to the backend environment and restart it.'
         : geminiTimedOut
-          ? 'Gemini took too long to analyze this bill. Try a clearer or smaller image.'
+          ? 'Gemini is taking too long to analyze this bill. Please try again shortly. If this keeps happening, check the Gemini API service and quota.'
         : geminiQuota
           ? 'Gemini rejected this request because its usage quota was reached. Check the Google AI Studio quota and billing settings.'
         : geminiUnavailable
