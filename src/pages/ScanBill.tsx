@@ -28,6 +28,23 @@ interface ScannedBill {
 
 type ScanStage = "idle" | "uploading" | "analyzing" | "done" | "error";
 
+function apiErrorMessage(error: any, fallback: string): string {
+  if (error?.response?.data?.error) {
+    const requestId = error.response.data.requestId;
+    return requestId ? `${error.response.data.error} (Reference: ${requestId})` : error.response.data.error;
+  }
+  if (error?.response?.status === 401) {
+    return "Your sign-in session is no longer valid. Please sign in again and retry.";
+  }
+  if (error?.code === "ECONNABORTED") {
+    return "The request timed out. Check your connection and try again.";
+  }
+  if (!error?.response) {
+    return "Could not reach the Trackify server. Check your connection and try again.";
+  }
+  return fallback;
+}
+
 const EXPENSE_CATEGORIES = [
   "Shopping", "Inventory", "Supplies", "Utilities", "Food & Dining",
   "Transport", "Rent", "Maintenance", "Marketing", "General",
@@ -142,7 +159,7 @@ export default function ScanBill() {
       toast({ title: "✅ Bill Scanned!", description: "Review the extracted details below." });
     } catch (error: any) {
       setScanStage("error");
-      const msg = error.response?.data?.error || error.message || "Failed to analyze the image.";
+      const msg = apiErrorMessage(error, "Could not analyze the image. Please try again.");
       setErrorMessage(msg);
       toast({ title: "Scan Failed", description: msg, variant: "destructive" });
     }
@@ -171,7 +188,7 @@ export default function ScanBill() {
       resetForm();
     } catch (error: any) {
       savedRef.current = false;
-      const msg = error.response?.data?.error || "Failed to save expense.";
+      const msg = apiErrorMessage(error, "Could not save this expense. Please try again.");
       toast({ title: "Save Failed", description: msg, variant: "destructive" });
     } finally {
       setIsSavingExpense(false);
@@ -209,7 +226,7 @@ export default function ScanBill() {
       resetForm();
     } catch (error: any) {
       savedRef.current = false;
-      const msg = error.response?.data?.error || "Failed to save sale.";
+      const msg = apiErrorMessage(error, "Could not save this sale. Please try again.");
       toast({ title: "Save Failed", description: msg, variant: "destructive" });
     } finally {
       setIsSavingSale(false);

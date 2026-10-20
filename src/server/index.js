@@ -10,6 +10,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { randomUUID } from 'node:crypto';
 
 import transactionRoutes from './routes/transactions.js';
 import analyticsRoutes from './routes/analytics.js';
@@ -31,6 +32,14 @@ const allowedOrigin = process.env.ALLOWED_ORIGIN || '*';
 
 const app = express();
 
+// Correlate diagnostics without recording request bodies, tokens, or personal data.
+app.use((req, res, next) => {
+  req.id = randomUUID();
+  res.setHeader('X-Request-Id', req.id);
+  console.log(`[${new Date().toISOString()}] ${req.id} ${req.method} ${req.path}`);
+  next();
+});
+
 // -- middleware ----------------------------------------------------------------
 app.use(cors({
   origin: allowedOrigin,
@@ -39,12 +48,6 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
-
-// Request logger
-app.use((req, _res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-  next();
-});
 
 // -- routes -------------------------------------------------------------------
 
@@ -86,8 +89,20 @@ app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
 
 // Global error handler
 app.use((err, _req, res, _next) => {
-  console.error('[Server Error]', err);
-  res.status(err.status || 500).json({ error: err.message || 'Internal server error' });
+  const status = err.status || err.statusCode || 500;
+  console.error('[Server Error]', {
+    requestId: _req.id || 'unavailable',
+    status,
+    code: err.code || err.name || 'UNKNOWN',
+  });
+  const message = status === 413
+    ? 'The request is too large. Bill images must be 10 MB or smaller.'
+    : status === 415
+      ? 'Unsupported image type. Upload a JPEG, PNG, or WebP image.'
+      : status < 500
+        ? err.message || 'Invalid request.'
+        : 'The server could not complete this request. Please try again.';
+  res.status(status).json({ error: message, requestId: _req.id });
 });
 
 // Bind to 0.0.0.0 — required on Render so the reverse proxy can reach the container.

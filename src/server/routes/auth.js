@@ -25,7 +25,14 @@ db.exec(`
 `);
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-const JWT_SECRET = process.env.JWT_SECRET || 'trackify-dev-secret-change-in-production';
+const JWT_SECRET = process.env.JWT_SECRET || (
+  process.env.NODE_ENV === 'production'
+    ? null
+    : 'trackify-dev-secret-change-in-production'
+);
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET must be configured in production.');
+}
 const JWT_EXPIRES = '7d';
 
 function signToken(userId) {
@@ -53,11 +60,28 @@ export function requireAuth(req, res, next) {
   try {
     const payload = jwt.verify(token, JWT_SECRET);
     const user = stmtFindById.get(payload.sub);
-    if (!user) return res.status(401).json({ error: 'User not found' });
+    if (!user) {
+      // A valid token without a backing account usually means the production
+      // database was reset or the client is pointed at a different backend.
+      // Log a request correlation ID only; never log the token or user data.
+      console.warn('[Auth] verified token has no matching account', {
+        requestId: req.id || 'unavailable',
+        path: req.path,
+      });
+      return res.status(401).json({
+        code: 'ACCOUNT_NOT_FOUND',
+        error: 'This session no longer matches an account on the server. Sign in again; if the issue continues, contact support to restore your account.',
+        requestId: req.id,
+      });
+    }
     req.user = safeUser(user);
     next();
-  } catch {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+  } catch (err) {
+    console.warn('[Auth] token validation failed', {
+      requestId: req.id || 'unavailable',
+      reason: err?.name === 'TokenExpiredError' ? 'expired' : 'invalid',
+    });
+    return res.status(401).json({ error: 'Invalid or expired token', requestId: req.id });
   }
 }
 

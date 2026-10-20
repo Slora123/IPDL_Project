@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { PreferencesProvider, usePreferences } from "@/contexts/PreferencesContext";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -38,7 +38,8 @@ function Protected({ children }: { children: React.ReactNode }) {
 
 const AppContent = () => {
   const { language, name, businessName, phone } = usePreferences();
-  const needsOnboarding = !language || !name || !businessName || !phone;
+  const { pathname } = useLocation();
+  const needsOnboarding = pathname !== "/login" && (!language || !name || !businessName || !phone);
 
   return (
     <>

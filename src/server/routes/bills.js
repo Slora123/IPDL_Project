@@ -57,8 +57,12 @@ router.post('/scan', upload.single('image'), async (req, res) => {
       },
     });
   } catch (e) {
-    console.error('[Bills] scan error:', e);
-    res.status(500).json({ error: 'Could not process the image. Please try again.' });
+    console.error('[Bills] scan failed', {
+      requestId: req.id || 'unavailable',
+      errorName: e?.name || 'Error',
+      errorCode: e?.code || 'UNKNOWN',
+    });
+    res.status(500).json({ error: 'Could not process this bill. Please try again later.', requestId: req.id });
   }
 });
 
@@ -102,8 +106,16 @@ router.post('/confirm', (req, res) => {
 
     res.status(201).json({ success: true, transaction: saved });
   } catch (e) {
-    console.error('[Bills] confirm error:', e);
-    res.status(500).json({ error: 'Failed to save bill as expense.' });
+    console.error('[Bills] expense save failed', {
+      requestId: req.id || 'unavailable',
+      errorName: e?.name || 'Error',
+      errorCode: e?.code || 'UNKNOWN',
+    });
+    res.status(500).json({
+      code: 'BILL_SAVE_FAILED',
+      error: 'Could not save this expense. Check the bill details and try again.',
+      requestId: req.id,
+    });
   }
 });
 
@@ -145,8 +157,16 @@ router.post('/confirm-sale', (req, res) => {
 
     res.status(201).json({ success: true, transaction: saved });
   } catch (e) {
-    console.error('[Bills] confirm-sale error:', e);
-    res.status(500).json({ error: 'Failed to save bill as sale.' });
+    console.error('[Bills] sale save failed', {
+      requestId: req.id || 'unavailable',
+      errorName: e?.name || 'Error',
+      errorCode: e?.code || 'UNKNOWN',
+    });
+    res.status(500).json({
+      code: 'BILL_SAVE_FAILED',
+      error: 'Could not save this sale. Check the bill details and try again.',
+      requestId: req.id,
+    });
   }
 });
 
