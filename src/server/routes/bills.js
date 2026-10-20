@@ -63,16 +63,25 @@ router.post('/scan', upload.single('image'), async (req, res) => {
       errorCode: e?.code || 'UNKNOWN',
     });
     const missingKey = e?.code === 'GEMINI_API_KEY_MISSING';
-    const providerFailure = String(e?.code || '').startsWith('GEMINI_HTTP_');
+    const geminiStatus = Number(String(e?.code || '').match(/^GEMINI_HTTP_(\d+)$/)?.[1]);
     const geminiTimedOut = e?.code === 'GEMINI_REQUEST_TIMEOUT';
+    const geminiQuota = geminiStatus === 429;
+    const geminiUnavailable = geminiStatus === 502 || geminiStatus === 503;
+    const geminiRejectedKey = geminiStatus === 401 || geminiStatus === 403;
     res.status(e?.status || 502).json({
       code: e?.code || 'BILL_SCAN_FAILED',
       error: missingKey
         ? 'Bill scanning is not configured on this server. Add GEMINI_API_KEY to the backend environment and restart it.'
         : geminiTimedOut
           ? 'Gemini took too long to analyze this bill. Try a clearer or smaller image.'
-        : providerFailure
-          ? 'The bill scanning service is unavailable or misconfigured. Check the Gemini API key and quota, then try again.'
+        : geminiQuota
+          ? 'Gemini rejected this request because its usage quota was reached. Check the Google AI Studio quota and billing settings.'
+        : geminiUnavailable
+          ? 'Gemini is temporarily unavailable. Wait a little, then try scanning again.'
+        : geminiRejectedKey
+          ? 'Gemini rejected the API key. Check that the key is active and permitted to use the Gemini API.'
+        : geminiStatus === 400
+          ? 'Gemini rejected the scan request. Try another JPEG, PNG, or WebP image.'
           : 'Could not process this bill. Check the server connection and try again later.',
       requestId: req.id,
     });
