@@ -9,8 +9,11 @@
 #   2. In Render dashboard → New → Blueprint → connect IPDL_Project repo.
 #   3. Render will read this file and create the service automatically.
 #   4. After the first deploy, go to the service's Environment tab and fill in:
-#        SARVAM_API_KEY, GEMINI_API_KEY, ALLOWED_ORIGIN, DB_PATH
+#        JWT_SECRET, SARVAM_API_KEY, GEMINI_API_KEY, ALLOWED_ORIGIN, DB_PATH
 #      (PORT is set by Render automatically — do NOT add it manually.)
+# NOTE: the free plan has an ephemeral filesystem and cannot use the disk below.
+# SQLite data will not survive restarts/redeploys on free. Select a durable
+# database and update the backend storage layer before using this in production.
 
 services:
   - type: web
