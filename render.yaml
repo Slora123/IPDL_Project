@@ -9,10 +9,18 @@
 #   2. In Render dashboard → New → Blueprint → connect IPDL_Project repo.
 #   3. Render will read this file and create the service automatically.
 #   4. After the first deploy, go to the service's Environment tab and fill in:
-#        JWT_SECRET, SARVAM_API_KEY, GEMINI_API_KEY, ALLOWED_ORIGIN
+#        JWT_SECRET, SARVAM_API_KEY, GEMINI_API_KEY, ALLOWED_ORIGIN,
+#        TURSO_DATABASE_URL, TURSO_AUTH_TOKEN
 #      (PORT is set by Render automatically — do NOT add it manually.)
-# NOTE: Free plan uses /tmp for SQLite — data resets on every restart/redeploy.
-# Upgrade to Starter ($7/mo) and uncomment the disk section for persistent data.
+#
+# DATABASE PERSISTENCE:
+#   Free plan containers restart periodically, wiping /tmp (including SQLite).
+#   Use Turso (free cloud SQLite) for persistent storage:
+#     1. Sign up at https://turso.tech (free)
+#     2. Run: turso db create trackify-db
+#     3. Get URL: turso db show trackify-db --url
+#     4. Get token: turso db tokens create trackify-db
+#     5. Set TURSO_DATABASE_URL and TURSO_AUTH_TOKEN in Render → Environment tab
 
 services:
   - type: web
@@ -33,19 +41,15 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: DB_PATH
-        value: /tmp/trackify.db   # /tmp is writable on free plan (ephemeral)
       - key: JWT_SECRET
         sync: false               # set in Render dashboard → Environment tab
       - key: ALLOWED_ORIGIN
         sync: false               # set to your Vercel URL e.g. https://ipdltrackify.vercel.app
+      - key: TURSO_DATABASE_URL
+        sync: false               # libsql://trackify-db-<org>.turso.io  — persistent cloud SQLite
+      - key: TURSO_AUTH_TOKEN
+        sync: false               # token from: turso db tokens create trackify-db
       - key: SARVAM_API_KEY
         sync: false
       - key: GEMINI_API_KEY
         sync: false
-
-    # Persistent disk — NOT available on Free plan. Uncomment after upgrading to Starter.
-    # disk:
-    #   name: trackify-data
-    #   mountPath: /var/data
-    #   sizeGB: 1

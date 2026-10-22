@@ -11,18 +11,33 @@ const router = Router();
 router.use(requireAuth);
 
 // GET /api/analytics/weekly-stats
-router.get('/weekly-stats', (req, res) => {
-  res.json(getWeeklyStats(req.user.id));
+router.get('/weekly-stats', async (req, res) => {
+  try {
+    res.json(await getWeeklyStats(req.user.id));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to fetch weekly stats' });
+  }
 });
 
 // GET /api/analytics/spending
-router.get('/spending', (req, res) => {
-  res.json(getCategorySpending(req.user.id));
+router.get('/spending', async (req, res) => {
+  try {
+    res.json(await getCategorySpending(req.user.id));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to fetch spending data' });
+  }
 });
 
 // GET /api/analytics/growth
-router.get('/growth', (req, res) => {
-  res.json(getGrowthMetrics(req.user.id));
+router.get('/growth', async (req, res) => {
+  try {
+    res.json(await getGrowthMetrics(req.user.id));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to fetch growth metrics' });
+  }
 });
 
 export default router;

@@ -73,9 +73,9 @@ router.post('/scan', upload.single('image'), async (req, res) => {
       error: missingKey
         ? 'Bill scanning is not configured on this server. Add GEMINI_API_KEY to the backend environment and restart it.'
         : geminiTimedOut
-          ? 'Gemini is taking too long to analyze this bill. Please try again shortly. If this keeps happening, check the Gemini API service and quota.'
+          ? 'Gemini is taking too long to analyze this bill. Please try again shortly.'
         : geminiQuota
-          ? 'Gemini rejected this request because its usage quota was reached. Check the Google AI Studio quota and billing settings.'
+          ? 'Gemini rejected this request because its usage quota was reached.'
         : geminiUnavailable
           ? 'Gemini is temporarily unavailable. Wait a little, then try scanning again.'
         : geminiRejectedKey
@@ -97,7 +97,7 @@ function buildItemDescription(items, vendorName) {
 
 // ── POST /api/bills/confirm — save as EXPENSE ─────────────────────────────────
 // Used when shopkeeper records a purchase they made (money out).
-router.post('/confirm', (req, res) => {
+router.post('/confirm', async (req, res) => {
   try {
     const { transaction, imageBase64 } = req.body;
     if (!transaction) return res.status(400).json({ error: 'No transaction data provided.' });
@@ -107,13 +107,11 @@ router.post('/confirm', (req, res) => {
     if (!total || total <= 0)
       return res.status(400).json({ error: 'Bill total is required and must be positive.' });
 
-    // Duplicate prevention: if the same invoiceNumber was already saved by this
-    // user, reject the second save rather than creating a duplicate transaction.
-    if (invoiceNumber && billRefExistsForUser(req.user.id, invoiceNumber, 'expense')) {
+    if (invoiceNumber && await billRefExistsForUser(req.user.id, invoiceNumber, 'expense')) {
       return res.status(409).json({ error: 'This bill has already been saved as an expense.' });
     }
 
-    const saved = createTransaction(req.user.id, {
+    const saved = await createTransaction(req.user.id, {
       type:         'expense',
       amount:       total,
       item:         buildItemDescription(items, vendorName),
@@ -143,7 +141,7 @@ router.post('/confirm', (req, res) => {
 
 // ── POST /api/bills/confirm-sale — save as INCOME (revenue) ──────────────────
 // Used when shopkeeper records a sale they made to a customer (money in).
-router.post('/confirm-sale', (req, res) => {
+router.post('/confirm-sale', async (req, res) => {
   try {
     const { transaction, imageBase64 } = req.body;
     if (!transaction) return res.status(400).json({ error: 'No transaction data provided.' });
@@ -153,24 +151,21 @@ router.post('/confirm-sale', (req, res) => {
     if (!total || total <= 0)
       return res.status(400).json({ error: 'Sale total is required and must be positive.' });
 
-    // Duplicate prevention for income entries
-    if (invoiceNumber && billRefExistsForUser(req.user.id, invoiceNumber, 'income')) {
+    if (invoiceNumber && await billRefExistsForUser(req.user.id, invoiceNumber, 'income')) {
       return res.status(409).json({ error: 'This bill has already been saved as a sale/income.' });
     }
 
-    // For sales, the item description is the sale description the shopkeeper wrote,
-    // falling back to the items on the bill or the customer name.
     const itemDesc = saleDescription?.trim() ||
                      buildItemDescription(items, vendorName) ||
                      'Customer Sale';
 
-    const saved = createTransaction(req.user.id, {
+    const saved = await createTransaction(req.user.id, {
       type:         'income',
       amount:       total,
       item:         itemDesc,
       category:     category || 'Sales',
       date:         date || new Date().toISOString().slice(0, 10),
-      merchant:     vendorName,           // reused as customer name for sales
+      merchant:     vendorName,
       source:       'bill',
       billRef:      invoiceNumber || null,
       billImage:    imageBase64   || null,

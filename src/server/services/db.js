@@ -1,109 +1,100 @@
 // src/server/services/db.js
-// Central SQLite database — single source of truth for all transactions.
-// ALL data-access functions require a userId and only return that user's rows.
+// Central database — single source of truth for all transactions and users.
+// Uses @libsql/client which supports:
+//   LOCAL DEV  : file:./trackify.db  (SQLite file, same as before)
+//   PRODUCTION : libsql://your-db.turso.io  (Turso cloud — persistent across restarts)
+//
+// Set these env vars on Render:
+//   TURSO_DATABASE_URL=libsql://your-db-name.turso.io
+//   TURSO_AUTH_TOKEN=your-turso-auth-token
+//
+// Without those vars the server falls back to a local file (works for dev).
 
-import { DatabaseSync } from 'node:sqlite';
+import { createClient } from '@libsql/client';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
-// DB_PATH env var lets Render point at a persistent disk (e.g. /var/data/trackify.db).
-// Falls back to project root for local dev — existing data is never overwritten.
-const dbPath = process.env.DB_PATH || path.join(here, '../../trackify.db');
-console.log(`[DB] SQLite path: ${dbPath}`);
+// Determine DB URL:
+// - If TURSO_DATABASE_URL is set → use Turso (persistent cloud SQLite)
+// - Otherwise fall back to local SQLite file
+const TURSO_URL   = process.env.TURSO_DATABASE_URL;
+const TURSO_TOKEN = process.env.TURSO_AUTH_TOKEN;
 
-const db = new DatabaseSync(dbPath);
+let dbClient;
 
-// Enable WAL mode for better concurrency
-db.exec('PRAGMA journal_mode=WAL;');
-
-// ── Schema ───────────────────────────────────────────────────────────────────
-// Step 1: Create tables without the userId column so IF NOT EXISTS works
-// on databases that already exist but predate the column.
-db.exec(`
-  CREATE TABLE IF NOT EXISTS transactions (
-    id            TEXT PRIMARY KEY,
-    type          TEXT NOT NULL CHECK(type IN ('income','expense')),
-    amount        REAL NOT NULL CHECK(amount > 0),
-    currency      TEXT NOT NULL DEFAULT 'INR',
-    item          TEXT NOT NULL,
-    category      TEXT NOT NULL DEFAULT 'General',
-    date          TEXT NOT NULL,
-    time          TEXT NOT NULL,
-    language      TEXT NOT NULL DEFAULT 'english',
-    paymentMethod TEXT,
-    source        TEXT NOT NULL DEFAULT 'manual' CHECK(source IN ('voice','bill','manual')),
-    merchant      TEXT,
-    voiceInput    TEXT,
-    billRef       TEXT,
-    createdAt     TEXT NOT NULL,
-    updatedAt     TEXT NOT NULL
-  );
-
-  CREATE TABLE IF NOT EXISTS users (
-    id           TEXT PRIMARY KEY,
-    name         TEXT NOT NULL,
-    email        TEXT NOT NULL UNIQUE,
-    password     TEXT NOT NULL,
-    businessName TEXT NOT NULL DEFAULT '',
-    phone        TEXT NOT NULL DEFAULT '',
-    createdAt    TEXT NOT NULL
-  );
-`);
-
-// Step 2: Safe migration — add userId column if it doesn’t exist yet.
-// SQLite pre-3.37 does not support IF NOT EXISTS on ALTER TABLE ADD COLUMN.
-// So we inspect the pragma and only ALTER if the column is missing.
-const txCols = db.prepare('PRAGMA table_info(transactions)').all().map(c => c.name);
-if (!txCols.includes('userId')) {
-  db.exec('ALTER TABLE transactions ADD COLUMN userId TEXT;');
-  console.log('[DB] Migration: added userId column to transactions');
+if (TURSO_URL) {
+  console.log(`[DB] Connecting to Turso: ${TURSO_URL}`);
+  dbClient = createClient({
+    url:       TURSO_URL,
+    authToken: TURSO_TOKEN,
+  });
+} else {
+  // Local file path — DB_PATH env var or project root fallback
+  const localPath = process.env.DB_PATH || path.join(here, '../../trackify.db');
+  console.log(`[DB] Using local SQLite: ${localPath}`);
+  dbClient = createClient({ url: `file:${localPath}` });
 }
-if (!txCols.includes('billImage')) {
-  db.exec('ALTER TABLE transactions ADD COLUMN billImage TEXT;');
-  console.log('[DB] Migration: added billImage column to transactions');
+
+// ── Schema bootstrap ──────────────────────────────────────────────────────────
+// We use executeSync-style wrappers via the async client.
+// Bootstrap runs once at startup — await in an IIFE.
+
+async function initSchema() {
+  await dbClient.executeMultiple(`
+    CREATE TABLE IF NOT EXISTS users (
+      id           TEXT PRIMARY KEY,
+      name         TEXT NOT NULL,
+      email        TEXT NOT NULL UNIQUE,
+      password     TEXT NOT NULL,
+      businessName TEXT NOT NULL DEFAULT '',
+      phone        TEXT NOT NULL DEFAULT '',
+      createdAt    TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS transactions (
+      id            TEXT PRIMARY KEY,
+      userId        TEXT,
+      type          TEXT NOT NULL,
+      amount        REAL NOT NULL,
+      currency      TEXT NOT NULL DEFAULT 'INR',
+      item          TEXT NOT NULL,
+      category      TEXT NOT NULL DEFAULT 'General',
+      date          TEXT NOT NULL,
+      time          TEXT NOT NULL,
+      language      TEXT NOT NULL DEFAULT 'english',
+      paymentMethod TEXT,
+      source        TEXT NOT NULL DEFAULT 'manual',
+      merchant      TEXT,
+      voiceInput    TEXT,
+      billRef       TEXT,
+      billImage     TEXT,
+      createdAt     TEXT NOT NULL,
+      updatedAt     TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_users_email          ON users(email);
+    CREATE INDEX IF NOT EXISTS idx_transactions_date    ON transactions(date);
+    CREATE INDEX IF NOT EXISTS idx_transactions_type    ON transactions(type);
+    CREATE INDEX IF NOT EXISTS idx_transactions_userId  ON transactions(userId);
+    CREATE INDEX IF NOT EXISTS idx_transactions_billRef ON transactions(billRef);
+  `);
+
+  console.log('[DB] Schema ready');
 }
-// Existing rows keep userId=NULL — they are treated as orphaned and never
-// exposed to any authenticated user (all queries filter WHERE userId=?).
 
-// Step 3: Create indexes (now that userId column definitely exists).
-db.exec(`
-  CREATE INDEX IF NOT EXISTS idx_transactions_date    ON transactions(date);
-  CREATE INDEX IF NOT EXISTS idx_transactions_type    ON transactions(type);
-  CREATE INDEX IF NOT EXISTS idx_transactions_userId  ON transactions(userId);
-  CREATE INDEX IF NOT EXISTS idx_transactions_billRef ON transactions(billRef);
-  CREATE INDEX IF NOT EXISTS idx_users_email          ON users(email);
-`);
+// Run schema init — module-level await (ESM top-level await)
+// We export a promise that resolves when the DB is ready.
+export const ready = initSchema().catch(err => {
+  console.error('[DB] Schema init failed:', err);
+  process.exit(1);
+});
 
-// ── Prepared statements ──────────────────────────────────────────────────────
-const stmtInsert = db.prepare(`
-  INSERT INTO transactions
-    (id,userId,type,amount,currency,item,category,date,time,language,
-     paymentMethod,source,merchant,voiceInput,billRef,billImage,createdAt,updatedAt)
-  VALUES
-    (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-`);
-
-const stmtBillRefExists = db.prepare(
-  'SELECT 1 FROM transactions WHERE userId=? AND billRef=? AND type=? LIMIT 1'
-);
-
-// All SELECT/UPDATE/DELETE statements filter by userId — never by id alone
-const stmtAllForUser    = db.prepare(`SELECT * FROM transactions WHERE userId=? ORDER BY date DESC, createdAt DESC`);
-const stmtByIdForUser   = db.prepare(`SELECT * FROM transactions WHERE id=? AND userId=?`);
-const stmtDeleteForUser = db.prepare(`DELETE FROM transactions WHERE id=? AND userId=?`);
-const stmtUpdateForUser = db.prepare(`
-  UPDATE transactions
-  SET type=?,amount=?,item=?,category=?,date=?,time=?,language=?,paymentMethod=?,merchant=?,updatedAt=?
-  WHERE id=? AND userId=?
-`);
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 const toISO = () => new Date().toISOString();
 
-// Returns today's date as YYYY-MM-DD in local time (not UTC)
 const localDateStr = (d = new Date()) =>
   `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
@@ -115,87 +106,147 @@ function parseRow(r) {
   return { ...r, amount: Number(r.amount) };
 }
 
-// ── Public API — every function requires userId ───────────────────────────────
+// Helper to run a query and return all rows
+async function queryAll(sql, args = []) {
+  const result = await dbClient.execute({ sql, args });
+  return result.rows;
+}
 
-export function createTransaction(userId, data) {
+// Helper to run a query and return the first row (or null)
+async function queryFirst(sql, args = []) {
+  const result = await dbClient.execute({ sql, args });
+  return result.rows[0] || null;
+}
+
+// Helper to run an INSERT/UPDATE/DELETE
+async function exec(sql, args = []) {
+  return dbClient.execute({ sql, args });
+}
+
+// ── User queries (used by auth routes) ───────────────────────────────────────
+export async function findUserByEmail(email) {
+  return queryFirst('SELECT * FROM users WHERE email = ?', [email]);
+}
+
+export async function findUserById(id) {
+  return queryFirst('SELECT * FROM users WHERE id = ?', [id]);
+}
+
+export async function insertUser(id, name, email, hashedPassword, businessName, phone, createdAt) {
+  await exec(
+    `INSERT INTO users (id, name, email, password, businessName, phone, createdAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?)`,
+    [id, name, email, hashedPassword, businessName, phone, createdAt]
+  );
+  return findUserById(id);
+}
+
+// ── Transaction queries ───────────────────────────────────────────────────────
+export async function createTransaction(userId, data) {
   if (!userId) throw new Error('userId is required');
   const id  = randomUUID();
   const now = toISO();
   const date = data.date || localDateStr();
   const time = data.time || timeStr();
 
-  stmtInsert.run(
-    id, userId,
-    data.type,
-    Number(data.amount),
-    data.currency || 'INR',
-    data.item,
-    data.category || 'General',
-    date, time,
-    data.language || 'english',
-    data.paymentMethod || null,
-    data.source || 'manual',
-    data.merchant || null,
-    data.voiceInput || null,
-    data.billRef    || null,
-    data.billImage  || null,
-    now, now
+  await exec(
+    `INSERT INTO transactions
+       (id, userId, type, amount, currency, item, category, date, time, language,
+        paymentMethod, source, merchant, voiceInput, billRef, billImage, createdAt, updatedAt)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id, userId,
+      data.type,
+      Number(data.amount),
+      data.currency || 'INR',
+      data.item,
+      data.category || 'General',
+      date, time,
+      data.language || 'english',
+      data.paymentMethod || null,
+      data.source || 'manual',
+      data.merchant   || null,
+      data.voiceInput || null,
+      data.billRef    || null,
+      data.billImage  || null,
+      now, now,
+    ]
   );
 
-  // Re-fetch using userId-scoped query so we never return another user's row
-  return parseRow(stmtByIdForUser.get(id, userId));
+  return parseRow(await queryFirst(
+    'SELECT * FROM transactions WHERE id = ? AND userId = ?', [id, userId]
+  ));
 }
 
-export function getAllTransactions(userId) {
+export async function getAllTransactions(userId) {
   if (!userId) return [];
-  return stmtAllForUser.all(userId).map(parseRow);
-}
-
-// Returns true if this user already has a transaction with the given billRef+type.
-// Used to prevent duplicate saves from the Scan Bill screen.
-export function billRefExistsForUser(userId, billRef, type) {
-  if (!userId || !billRef) return false;
-  return !!stmtBillRefExists.get(userId, billRef, type);
-}
-
-export function getTransactionById(id, userId) {
-  if (!userId) return null;
-  return parseRow(stmtByIdForUser.get(id, userId));
-}
-
-export function updateTransaction(id, userId, data) {
-  if (!userId) return null;
-  const existing = stmtByIdForUser.get(id, userId);
-  if (!existing) return null;   // not found OR belongs to someone else → same 404
-  const now = toISO();
-  stmtUpdateForUser.run(
-    data.type         ?? existing.type,
-    Number(data.amount ?? existing.amount),
-    data.item         ?? existing.item,
-    data.category     ?? existing.category,
-    data.date         ?? existing.date,
-    data.time         ?? existing.time,
-    data.language     ?? existing.language,
-    data.paymentMethod ?? existing.paymentMethod,
-    data.merchant     ?? existing.merchant,
-    now,
-    id, userId
+  const rows = await queryAll(
+    'SELECT * FROM transactions WHERE userId = ? ORDER BY date DESC, createdAt DESC',
+    [userId]
   );
-  return parseRow(stmtByIdForUser.get(id, userId));
+  return rows.map(parseRow);
 }
 
-export function deleteTransaction(id, userId) {
+export async function billRefExistsForUser(userId, billRef, type) {
+  if (!userId || !billRef) return false;
+  const row = await queryFirst(
+    'SELECT 1 FROM transactions WHERE userId = ? AND billRef = ? AND type = ? LIMIT 1',
+    [userId, billRef, type]
+  );
+  return !!row;
+}
+
+export async function getTransactionById(id, userId) {
+  if (!userId) return null;
+  return parseRow(await queryFirst(
+    'SELECT * FROM transactions WHERE id = ? AND userId = ?', [id, userId]
+  ));
+}
+
+export async function updateTransaction(id, userId, data) {
+  if (!userId) return null;
+  const existing = await queryFirst(
+    'SELECT * FROM transactions WHERE id = ? AND userId = ?', [id, userId]
+  );
+  if (!existing) return null;
+  const now = toISO();
+  await exec(
+    `UPDATE transactions
+     SET type=?, amount=?, item=?, category=?, date=?, time=?, language=?,
+         paymentMethod=?, merchant=?, updatedAt=?
+     WHERE id = ? AND userId = ?`,
+    [
+      data.type          ?? existing.type,
+      Number(data.amount ?? existing.amount),
+      data.item          ?? existing.item,
+      data.category      ?? existing.category,
+      data.date          ?? existing.date,
+      data.time          ?? existing.time,
+      data.language      ?? existing.language,
+      data.paymentMethod ?? existing.paymentMethod,
+      data.merchant      ?? existing.merchant,
+      now,
+      id, userId,
+    ]
+  );
+  return parseRow(await queryFirst(
+    'SELECT * FROM transactions WHERE id = ? AND userId = ?', [id, userId]
+  ));
+}
+
+export async function deleteTransaction(id, userId) {
   if (!userId) return false;
-  const r = stmtByIdForUser.get(id, userId);
-  if (!r) return false;         // not found OR belongs to someone else → same 404
-  stmtDeleteForUser.run(id, userId);
+  const r = await queryFirst(
+    'SELECT * FROM transactions WHERE id = ? AND userId = ?', [id, userId]
+  );
+  if (!r) return false;
+  await exec('DELETE FROM transactions WHERE id = ? AND userId = ?', [id, userId]);
   return true;
 }
 
-// ── Analytics — all filtered by userId ───────────────────────────────────────
-
-export function getSummary(userId) {
-  const txs = getAllTransactions(userId);
+// ── Analytics ─────────────────────────────────────────────────────────────────
+export async function getSummary(userId) {
+  const txs = await getAllTransactions(userId);
 
   const todayDate    = new Date();
   const todayStr     = localDateStr(todayDate);
@@ -248,8 +299,8 @@ export function getSummary(userId) {
   };
 }
 
-export function getWeeklyStats(userId) {
-  const txs  = getAllTransactions(userId);
+export async function getWeeklyStats(userId) {
+  const txs  = await getAllTransactions(userId);
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const map  = {};
   for (let i = 6; i >= 0; i--) {
@@ -266,8 +317,8 @@ export function getWeeklyStats(userId) {
   return Object.values(map).map(d => ({ ...d, profit: d.income - d.expense }));
 }
 
-export function getCategorySpending(userId) {
-  const txs  = getAllTransactions(userId).filter(t => t.type === 'expense');
+export async function getCategorySpending(userId) {
+  const txs  = (await getAllTransactions(userId)).filter(t => t.type === 'expense');
   const map  = {};
   for (const t of txs) map[t.category] = (map[t.category] || 0) + t.amount;
   const total  = Object.values(map).reduce((s, v) => s + v, 0) || 1;
@@ -284,8 +335,8 @@ export function getCategorySpending(userId) {
   return { topCategories: sorted };
 }
 
-export function getGrowthMetrics(userId) {
-  const txs       = getAllTransactions(userId);
+export async function getGrowthMetrics(userId) {
+  const txs       = await getAllTransactions(userId);
   const today     = localDateStr();
   const thisMonth = today.slice(0, 7);
   const lastMonthDate = new Date(); lastMonthDate.setMonth(lastMonthDate.getMonth() - 1);
@@ -312,4 +363,5 @@ export function getGrowthMetrics(userId) {
   };
 }
 
-export default db;
+// Export the client for direct use if needed (e.g. bill routes)
+export default dbClient;

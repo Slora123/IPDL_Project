@@ -1,6 +1,6 @@
 // src/server/index.js
 // Unified Trackify backend — Express server integrating:
-//   - Transactions (CRUD + shared SQLite DB)
+//   - Transactions (CRUD + shared SQLite DB via Turso / local file)
 //   - Analytics (dashboard stats, weekly, category, growth)
 //   - Voice/NLP (SarvamAI speech-to-text + financial intent)
 //   - Bills/OCR (Gemini vision extraction)
@@ -18,7 +18,7 @@ import voiceRoutes from './routes/voice.js';
 import billRoutes from './routes/bills.js';
 import stubRoutes from './routes/stubs.js';
 import authRoutes, { requireAuth } from './routes/auth.js';
-import { getSummary } from './services/db.js';
+import { getSummary, ready as dbReady } from './services/db.js';
 
 const _here = path.dirname(fileURLToPath(import.meta.url));
 
@@ -26,7 +26,7 @@ const _here = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3001;
 
 // ALLOWED_ORIGIN: set to your Vercel frontend URL in production
-//   e.g.  ALLOWED_ORIGIN=https://trackify-xyz.vercel.app
+//   e.g.  ALLOWED_ORIGIN=https://ipdltrackify.vercel.app
 // Leave unset (defaults to *) for local development.
 const allowedOrigin = process.env.ALLOWED_ORIGIN || '*';
 
@@ -67,7 +67,14 @@ app.get('/api/health', (_req, res) => res.json({ status: 'ok', time: new Date().
 app.get('/health',     (_req, res) => res.json({ status: 'ok', time: new Date().toISOString() }));
 
 // Dashboard stats — requires auth, filtered by the authenticated user's ID
-app.get('/api/stats', requireAuth, (req, res) => res.json(getSummary(req.user.id)));
+app.get('/api/stats', requireAuth, async (req, res) => {
+  try {
+    res.json(await getSummary(req.user.id));
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ error: 'Failed to fetch stats' });
+  }
+});
 
 // Analytics routes (auth applied inside the router)
 app.use('/api/analytics', analyticsRoutes);
@@ -105,15 +112,18 @@ app.use((err, _req, res, _next) => {
   res.status(status).json({ error: message, requestId: _req.id });
 });
 
-// Bind to 0.0.0.0 — required on Render so the reverse proxy can reach the container.
-// Binding to 127.0.0.1 (the default when host is omitted) would make Render health
-// checks time out and the deploy would be marked as failed.
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n🚀 Trackify Server running on port ${PORT}`);
-  console.log(`   ✅ Transactions: POST/GET /api/transactions`);
-  console.log(`   ✅ Analytics:    GET /api/stats, /api/analytics/*`);
-  console.log(`   ✅ Voice/NLP:    POST /api/voice/process (SarvamAI)`);
-  console.log(`   ✅ Bill OCR:     POST /api/bills/scan (Gemini), POST /api/bills/confirm`);
-  console.log(`   ✅ CORS origin:  ${allowedOrigin}`);
-  console.log(`   ✅ Health:       GET /api/health\n`);
+// Wait for the DB to be ready before accepting connections.
+// This ensures the schema exists before the first request hits the server.
+dbReady.then(() => {
+  // Bind to 0.0.0.0 — required on Render so the reverse proxy can reach the container.
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n🚀 Trackify Server running on port ${PORT}`);
+    console.log(`   ✅ Database:      ${process.env.TURSO_DATABASE_URL ? 'Turso (cloud, persistent)' : 'Local SQLite file'}`);
+    console.log(`   ✅ Transactions: POST/GET /api/transactions`);
+    console.log(`   ✅ Analytics:    GET /api/stats, /api/analytics/*`);
+    console.log(`   ✅ Voice/NLP:    POST /api/voice/process (SarvamAI)`);
+    console.log(`   ✅ Bill OCR:     POST /api/bills/scan (Gemini), POST /api/bills/confirm`);
+    console.log(`   ✅ CORS origin:  ${allowedOrigin}`);
+    console.log(`   ✅ Health:       GET /api/health\n`);
+  });
 });

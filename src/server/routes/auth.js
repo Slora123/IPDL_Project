@@ -6,23 +6,9 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import db from '../services/db.js';
+import { findUserByEmail, findUserById, insertUser } from '../services/db.js';
 
 const router = Router();
-
-// ── Ensure users table exists ────────────────────────────────────────────────
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id          TEXT PRIMARY KEY,
-    name        TEXT NOT NULL,
-    email       TEXT NOT NULL UNIQUE,
-    password    TEXT NOT NULL,
-    businessName TEXT NOT NULL DEFAULT '',
-    phone       TEXT NOT NULL DEFAULT '',
-    createdAt   TEXT NOT NULL
-  );
-  CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-`);
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const JWT_SECRET = process.env.JWT_SECRET || (
@@ -45,32 +31,22 @@ function safeUser(row) {
   return safe;
 }
 
-const stmtFindByEmail = db.prepare('SELECT * FROM users WHERE email = ?');
-const stmtFindById    = db.prepare('SELECT * FROM users WHERE id = ?');
-const stmtInsertUser  = db.prepare(`
-  INSERT INTO users (id, name, email, password, businessName, phone, createdAt)
-  VALUES (?, ?, ?, ?, ?, ?, ?)
-`);
-
 // ── Middleware: verify JWT ───────────────────────────────────────────────────
-export function requireAuth(req, res, next) {
+export async function requireAuth(req, res, next) {
   const header = req.headers.authorization || '';
   const token  = header.startsWith('Bearer ') ? header.slice(7) : null;
   if (!token) return res.status(401).json({ error: 'Not authenticated' });
   try {
     const payload = jwt.verify(token, JWT_SECRET);
-    const user = stmtFindById.get(payload.sub);
+    const user = await findUserById(payload.sub);
     if (!user) {
-      // A valid token without a backing account usually means the production
-      // database was reset or the client is pointed at a different backend.
-      // Log a request correlation ID only; never log the token or user data.
       console.warn('[Auth] verified token has no matching account', {
         requestId: req.id || 'unavailable',
         path: req.path,
       });
       return res.status(401).json({
         code: 'ACCOUNT_NOT_FOUND',
-        error: 'This session no longer matches an account on the server. Sign in again; if the issue continues, contact support to restore your account.',
+        error: 'This session no longer matches an account on the server. Sign in again.',
         requestId: req.id,
       });
     }
@@ -97,7 +73,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ error: 'Password must be at least 6 characters' });
 
     const emailLower = email.toLowerCase().trim();
-    const existing = stmtFindByEmail.get(emailLower);
+    const existing = await findUserByEmail(emailLower);
     if (existing)
       return res.status(409).json({ error: 'An account with this email already exists' });
 
@@ -106,12 +82,10 @@ router.post('/register', async (req, res) => {
     const id = randomUUID();
     const now = new Date().toISOString();
 
-    stmtInsertUser.run(id, name.trim(), emailLower, hashed, businessName.trim(), phone.trim(), now);
-
-    const user = safeUser(stmtFindById.get(id));
+    const newUser = await insertUser(id, name.trim(), emailLower, hashed, businessName.trim(), phone.trim(), now);
     const token = signToken(id);
 
-    res.status(201).json({ user, token });
+    res.status(201).json({ user: safeUser(newUser), token });
   } catch (err) {
     console.error('[Auth] Register error:', err.message);
     res.status(500).json({ error: 'Registration failed. Please try again.' });
@@ -126,7 +100,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'email and password are required' });
 
     const emailLower = email.toLowerCase().trim();
-    const row = stmtFindByEmail.get(emailLower);
+    const row = await findUserByEmail(emailLower);
     if (!row) return res.status(401).json({ error: 'Invalid email or password' });
 
     const match = await bcrypt.compare(password, row.password);
