@@ -5,7 +5,7 @@
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 // Receipt extraction is a short, structured multimodal task. Allow a server
 // override, but default to Google's low-latency Flash-Lite model for this path.
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.1-flash-lite';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
 const GEMINI_TIMEOUT_MS = 45_000;
 const MAX_BYTES = 10 * 1024 * 1024;
 const VALID_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -19,7 +19,20 @@ export function validateImageFile(file) {
 }
 
 /**
- * Analyse image with Gemini vision (same logic as bill-ocr/server.js:analyse())
+ * Extract JSON from a Gemini text response.
+ * Handles both plain JSON and ```json ... ``` code blocks.
+ */
+function extractJson(text) {
+  if (!text) throw new Error('Empty response from Gemini');
+  // Strip markdown code fences if present
+  const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const raw = match ? match[1].trim() : text.trim();
+  return JSON.parse(raw);
+}
+
+/**
+ * Analyse image with Gemini vision.
+ * Uses gemini-1.5-flash with a clear JSON-in-text prompt for broad key compatibility.
  */
 async function analyseWithGemini(buf, mimeType) {
   if (!GEMINI_KEY) {
@@ -30,43 +43,34 @@ async function analyseWithGemini(buf, mimeType) {
   }
 
   const today = new Date().toISOString().slice(0, 10);
-  const prompt = `Decide whether the attached image is a genuine bill/receipt/invoice, and if so extract its details.
-Numbers alone do NOT make a bill. A bill has several of: vendor name, purchased items, quantities, prices, subtotal/total, date, invoice number, tax/GST.
-Never invent values. Use null for anything not present. Numbers must be plain numbers (no currency symbols). Dates as YYYY-MM-DD (today is ${today}). If quantity is missing use 1; if unitPrice is missing compute it from totalPrice/quantity.`;
+  // Ask Gemini to return pure JSON — works on free-tier gemini-1.5-flash keys.
+  const prompt = `You are a bill/receipt OCR assistant. Analyze the attached image and respond with ONLY a valid JSON object (no markdown, no extra text).
 
-  const schema = {
-    type: 'object',
-    properties: {
-      isBill: { type: 'boolean' },
-      confidence: { type: 'number' },
-      transaction: {
-        type: 'object',
-        properties: {
-          vendorName: { type: 'string', nullable: true },
-          date: { type: 'string', nullable: true },
-          invoiceNumber: { type: 'string', nullable: true },
-          items: {
-            type: 'array',
-            items: {
-              type: 'object',
-              properties: {
-                name: { type: 'string' },
-                quantity: { type: 'number' },
-                unitPrice: { type: 'number', nullable: true },
-                totalPrice: { type: 'number', nullable: true }
-              },
-              required: ['name', 'quantity']
-            }
-          },
-          subtotal: { type: 'number', nullable: true },
-          tax: { type: 'number', nullable: true },
-          total: { type: 'number', nullable: true },
-          currencySymbol: { type: 'string', nullable: true }
-        }
-      }
-    },
-    required: ['isBill', 'confidence']
-  };
+Decide if the image is a genuine bill/receipt/invoice. A bill must have several of: vendor name, items, prices, subtotal/total, date, invoice number, or tax/GST. Numbers alone are NOT a bill.
+
+Return this exact JSON structure:
+{
+  "isBill": true or false,
+  "confidence": 0.0 to 1.0,
+  "transaction": {
+    "vendorName": "string or null",
+    "date": "YYYY-MM-DD or null (today is ${today})",
+    "invoiceNumber": "string or null",
+    "currencySymbol": "₹ or $ or other",
+    "items": [
+      { "name": "item name", "quantity": 1, "unitPrice": 0.00, "totalPrice": 0.00 }
+    ],
+    "subtotal": 0.00,
+    "tax": 0.00,
+    "total": 0.00
+  }
+}
+
+Rules:
+- Never invent values. Use null for anything not visible.
+- Numbers must be plain numbers (no currency symbols).
+- If quantity is missing, use 1. If unitPrice is missing, compute it from totalPrice/quantity.
+- If it is NOT a bill, set isBill=false and transaction can be null.`;
 
   let r;
   try {
@@ -84,11 +88,9 @@ Never invent values. Use null for anything not present. Numbers must be plain nu
             ]
           }],
           generationConfig: {
+            // Request JSON output — gemini-1.5-flash supports this without a schema
             responseMimeType: 'application/json',
-            responseJsonSchema: schema,
-            // OCR extraction is a straightforward structured task; low thinking
-            // avoids spending the browser's entire request window reasoning.
-            thinkingConfig: { thinkingLevel: 'low' },
+            temperature: 0.1,
           }
         })
       }
@@ -102,16 +104,33 @@ Never invent values. Use null for anything not present. Numbers must be plain nu
   }
 
   if (!r.ok) {
-    // Keep provider response bodies out of logs and client errors; they can
-    // contain request details. The HTTP status is enough to diagnose config,
-    // quota, and provider failures safely.
+    const errBody = await r.text().catch(() => '');
+    console.error('[OCR] Gemini error response:', r.status, errBody.slice(0, 300));
     throw Object.assign(new Error(`Gemini returned HTTP ${r.status}.`), {
       code: `GEMINI_HTTP_${r.status}`,
       status: 503,
     });
   }
+
   const out = await r.json();
-  return JSON.parse(out.candidates[0].content.parts[0].text);
+  const rawText = out?.candidates?.[0]?.content?.parts?.[0]?.text;
+  if (!rawText) {
+    console.error('[OCR] Unexpected Gemini response shape:', JSON.stringify(out).slice(0, 500));
+    throw Object.assign(new Error('Gemini returned an empty response.'), {
+      code: 'GEMINI_EMPTY_RESPONSE',
+      status: 502,
+    });
+  }
+
+  try {
+    return extractJson(rawText);
+  } catch (parseErr) {
+    console.error('[OCR] Failed to parse Gemini JSON:', rawText.slice(0, 500));
+    throw Object.assign(new Error('Gemini returned malformed JSON.'), {
+      code: 'GEMINI_PARSE_ERROR',
+      status: 502,
+    });
+  }
 }
 
 function isConfidentBill(a) {
