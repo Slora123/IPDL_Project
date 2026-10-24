@@ -142,6 +142,8 @@ const translations: Translations = {
       delete_title: "Delete Transaction",
       delete_confirm: "Are you sure you want to delete this transaction?",
       edit_title: "Edit Transaction",
+      bills_tab: "Bills",
+      no_bill_transactions: "No scanned bills found",
     },
     spending: {
       title: "Category Breakdown",
@@ -500,6 +502,8 @@ const translations: Translations = {
       delete_title: "लेन-देन हटाएं",
       delete_confirm: "क्या आप वाकई इस लेन-देन को हटाना चाहते हैं?",
       edit_title: "लेन-देन संपादित करें",
+      bills_tab: "बिल",
+      no_bill_transactions: "कोई स्कैन किया गया बिल नहीं मिला",
     },
     spending: {
       title: "श्रेणी विश्लेषण",
@@ -858,6 +862,8 @@ const translations: Translations = {
       delete_title: "व्यवहार हटवा",
       delete_confirm: "तुम्हाला नक्की हा व्यवहार हटवायचा आहे का?",
       edit_title: "व्यवहार संपादित करा",
+      bills_tab: "बिल",
+      no_bill_transactions: "कोणतेही स्कॅन केलेले बिल आढळले नाही",
     },
     spending: {
       title: "श्रेणी विश्लेषण",

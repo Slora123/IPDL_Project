@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import {
   TrendingDown,
   Calendar,
   Mic,
+  Receipt,
   Edit,
   Trash2,
   ExternalLink
@@ -41,6 +43,9 @@ interface Transaction {
   time: string;
   date: string;
   language: "hindi" | "english" | "marathi";
+  source?: string;
+  billRef?: string;
+  billImage?: string;
   voiceInput?: string;
 }
 
@@ -48,6 +53,23 @@ export default function Transactions() {
   const { t, tCategory } = useI18n();
   const { language } = usePreferences();
   const isEnglish = language === 'en';
+  const [searchParams, setSearchParams] = useSearchParams();
+  const validTabs = ["all", "today", "income", "expenses", "bills", "voice"];
+  const currentTab = validTabs.includes(searchParams.get("tab") || "") ? (searchParams.get("tab") as string) : "all";
+  const [activeTab, setActiveTab] = useState(currentTab);
+
+  useEffect(() => {
+    const tabParam = searchParams.get("tab");
+    if (tabParam && validTabs.includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [searchParams]);
+
+  const handleTabChange = (val: string) => {
+    setActiveTab(val);
+    setSearchParams({ tab: val });
+  };
+
   const [searchTerm, setSearchTerm] = useState("");
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
@@ -201,6 +223,12 @@ export default function Transactions() {
                   <Badge variant="secondary" className="text-xs bg-muted">
                     <Mic className="h-3 w-3 mr-1 text-primary" />
                     {t('voice', 'dashboard')}
+                  </Badge>
+                )}
+                {(transaction.source === 'bill' || transaction.billRef) && (
+                  <Badge variant="secondary" className="text-xs bg-muted">
+                    <Receipt className="h-3 w-3 mr-1 text-primary" />
+                    {t('bill', 'transactions', 'Bill')}
                   </Badge>
                 )}
               </div>
@@ -377,12 +405,13 @@ export default function Transactions() {
       </div>
 
       {/* Transaction Tabs */}
-      <Tabs defaultValue="all" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-4">
         <TabsList className="flex-wrap h-auto w-full justify-start sm:justify-center">
           <TabsTrigger value="all">{t('all_transactions_tab', 'dashboard')}</TabsTrigger>
           <TabsTrigger value="today">{t('today', 'common')}</TabsTrigger>
           <TabsTrigger value="income">{t('income_only', 'dashboard')}</TabsTrigger>
           <TabsTrigger value="expenses">{t('expenses_only', 'dashboard')}</TabsTrigger>
+          <TabsTrigger value="bills">{t('bills_tab', 'transactions', 'Bills')}</TabsTrigger>
           <TabsTrigger value="voice">{t('voice_recorded', 'dashboard')}</TabsTrigger>
         </TabsList>
 
@@ -412,39 +441,69 @@ export default function Transactions() {
 
         <TabsContent value="today" className="space-y-4">
           <div className="space-y-3">
-            {todayTransactions.map(transaction => (
-              <TransactionCard key={transaction.id} transaction={transaction} />
-            ))}
+            {todayTransactions.length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">{t('no_transactions', 'transactions', 'No transactions found')}</p>
+            ) : (
+              todayTransactions.map(transaction => (
+                <TransactionCard key={transaction.id} transaction={transaction} />
+              ))
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="income" className="space-y-4">
           <div className="space-y-3">
-            {filteredTransactions
-              .filter(t => t.type === "income")
-              .map(transaction => (
-                <TransactionCard key={transaction.id} transaction={transaction} />
-              ))}
+            {filteredTransactions.filter(t => t.type === "income").length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">{t('no_transactions', 'transactions', 'No transactions found')}</p>
+            ) : (
+              filteredTransactions
+                .filter(t => t.type === "income")
+                .map(transaction => (
+                  <TransactionCard key={transaction.id} transaction={transaction} />
+                ))
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="expenses" className="space-y-4">
           <div className="space-y-3">
-            {filteredTransactions
-              .filter(t => t.type === "expense")
-              .map(transaction => (
-                <TransactionCard key={transaction.id} transaction={transaction} />
-              ))}
+            {filteredTransactions.filter(t => t.type === "expense").length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">{t('no_transactions', 'transactions', 'No transactions found')}</p>
+            ) : (
+              filteredTransactions
+                .filter(t => t.type === "expense")
+                .map(transaction => (
+                  <TransactionCard key={transaction.id} transaction={transaction} />
+                ))
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="bills" className="space-y-4">
+          <div className="space-y-3">
+            {filteredTransactions.filter(t => t.source === "bill" || t.billRef).length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">{t('no_bill_transactions', 'transactions', 'No scanned bills found')}</p>
+            ) : (
+              filteredTransactions
+                .filter(t => t.source === "bill" || t.billRef)
+                .map(transaction => (
+                  <TransactionCard key={transaction.id} transaction={transaction} />
+                ))
+            )}
           </div>
         </TabsContent>
 
         <TabsContent value="voice" className="space-y-4">
           <div className="space-y-3">
-            {filteredTransactions
-              .filter(t => t.voiceInput)
-              .map(transaction => (
-                <TransactionCard key={transaction.id} transaction={transaction} />
-              ))}
+            {filteredTransactions.filter(t => t.voiceInput).length === 0 ? (
+              <p className="text-muted-foreground text-center py-8">{t('no_transactions', 'transactions', 'No transactions found')}</p>
+            ) : (
+              filteredTransactions
+                .filter(t => t.voiceInput)
+                .map(transaction => (
+                  <TransactionCard key={transaction.id} transaction={transaction} />
+                ))
+            )}
           </div>
         </TabsContent>
       </Tabs>

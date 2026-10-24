@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ interface BillItem {
 interface ScannedBill {
   vendorName: string | null;
   date: string | null;
+  detectedBillDate?: string | null;
   invoiceNumber: string | null;
   items: BillItem[];
   subtotal: number | null;
@@ -60,6 +62,7 @@ const INCOME_CATEGORIES = [
 ];
 
 export default function ScanBill() {
+  const navigate = useNavigate();
   const { t, tCategory } = useI18n();
   const [scanStage, setScanStage] = useState<ScanStage>("idle");
   const [scanResult, setScanResult] = useState<ScannedBill | null>(null);
@@ -153,8 +156,10 @@ export default function ScanBill() {
 
       const today = getTodayDateStr();
       const extracted = response.data.transaction;
-      const initialDate = /^\d{4}-\d{2}-\d{2}$/.test(extracted?.date || "") ? extracted.date : today;
-      const tx = { ...extracted, date: initialDate };
+      // Default transaction date to TODAY so it registers immediately in Today's Transactions, Dashboard, and Spending
+      const detectedBillDate = /^\d{4}-\d{2}-\d{2}$/.test(extracted?.date || "") ? extracted.date : null;
+      const initialDate = today;
+      const tx = { ...extracted, date: initialDate, detectedBillDate };
 
       setScanResult(tx);
       setEditedResult(tx);
@@ -201,9 +206,10 @@ export default function ScanBill() {
       window.dispatchEvent(new CustomEvent('trackify:transaction-saved', { detail: response.data?.transaction }));
       toast({
         title: "✅ Expense Saved!",
-        description: `₹${editedResult.total.toFixed(2)} expense recorded under ${expenseCategory}. Visible in Transactions, Spending & Dashboard.`,
+        description: `₹${editedResult.total.toFixed(2)} recorded under ${expenseCategory}. Redirecting to Expenses...`,
       });
       resetForm();
+      navigate('/transactions?tab=expenses');
     } catch (error: any) {
       savedRef.current = false;
       const msg = apiErrorMessage(error, "Could not save this expense. Please try again.");
@@ -242,9 +248,10 @@ export default function ScanBill() {
       window.dispatchEvent(new CustomEvent('trackify:transaction-saved', { detail: response.data?.transaction }));
       toast({
         title: "✅ Income Recorded!",
-        description: `₹${editedResult.total.toFixed(2)} income from "${saleDescription}" added to your account.`,
+        description: `₹${editedResult.total.toFixed(2)} recorded as income. Redirecting to Income...`,
       });
       resetForm();
+      navigate('/transactions?tab=income');
     } catch (error: any) {
       savedRef.current = false;
       const msg = apiErrorMessage(error, "Could not save this income. Please try again.");
@@ -393,6 +400,18 @@ export default function ScanBill() {
                   >
                     {t("set_today", "scan")}
                   </Button>
+                  {editedResult.detectedBillDate && editedResult.detectedBillDate !== editedResult.date && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="secondary"
+                      className="h-7 text-xs px-2 font-mono"
+                      onClick={() => updateField("date", editedResult.detectedBillDate)}
+                      disabled={isBusy}
+                    >
+                      {`Bill Date: ${editedResult.detectedBillDate}`}
+                    </Button>
+                  )}
                 </div>
                 <span className="text-[11px] text-muted-foreground">
                   {t("date_tip", "scan")}
