@@ -14,17 +14,17 @@ const upload = multer({
 
 router.post("/process", upload.single("audio"), async (req, res) => {
   try {
-    if (!req.file) {
+    if (!req.file || !req.file.buffer || req.file.size === 0) {
       return res.status(400).json({
         success: false,
-        error: "No audio file provided."
+        error: "No audio file provided or recorded audio was empty."
       });
     }
 
     const mimeType = req.file.mimetype || "audio/webm";
 
     console.log(
-      `[Voice] Processing audio: ${req.file.size} bytes, type: ${mimeType}`
+      `[Voice] Processing audio: ${req.file.size} bytes, mime: ${mimeType}`
     );
 
     let transcribeResult;
@@ -36,7 +36,7 @@ router.post("/process", upload.single("audio"), async (req, res) => {
         req.body.target_lang || req.body.language || "en-IN"
       );
     } catch (error) {
-      console.error("[Voice] Sarvam error:", error.message);
+      console.error("[Voice] Sarvam speech processing error:", error.message);
 
       return res.status(502).json({
         success: false,
@@ -51,11 +51,31 @@ router.post("/process", upload.single("audio"), async (req, res) => {
       sourceLanguage
     } = transcribeResult;
 
-    // Gemini parsing is asynchronous, so await the result.
-    const intent = await parseFinancialIntent(
-      englishTranslation,
-      transcript
-    );
+    let intent;
+    try {
+      intent = await parseFinancialIntent(
+        englishTranslation,
+        transcript
+      );
+    } catch (error) {
+      console.error("[Voice] Gemini transaction parsing error:", error.message);
+      const isUnavailable =
+        error?.status === 503 ||
+        error?.statusCode === 503 ||
+        String(error?.message || "").includes("503");
+
+      const message = isUnavailable
+        ? "AI transaction service is temporarily busy. Please try again in a few moments."
+        : `Transaction understanding failed: ${error.message}`;
+
+      return res.status(502).json({
+        success: false,
+        error: message,
+        transcript,
+        englishTranslation,
+        sourceLanguage
+      });
+    }
 
     if (!intent) {
       return res.json({
@@ -64,7 +84,7 @@ router.post("/process", upload.single("audio"), async (req, res) => {
         englishTranslation,
         sourceLanguage,
         message:
-          "Could not confidently identify a financial transaction. Please try describing the income or expense again."
+          "Could not detect a clear transaction amount. Please try stating the amount and item clearly (e.g., 'Spent 250 on groceries' or '₹500 मुनाफा हुआ')."
       });
     }
 
@@ -91,11 +111,11 @@ router.post("/process", upload.single("audio"), async (req, res) => {
       }
     });
   } catch (error) {
-    console.error("[Voice] Unexpected error:", error);
+    console.error("[Voice] Unexpected route error:", error.message);
 
     return res.status(500).json({
       success: false,
-      error: "Failed to process audio."
+      error: "Failed to process audio request. Please try again."
     });
   }
 });

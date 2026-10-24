@@ -4,8 +4,8 @@
 
 const GEMINI_KEY = process.env.GEMINI_API_KEY;
 // Receipt extraction is a short, structured multimodal task. Allow a server
-// override, but default to Google's low-latency Flash-Lite model for this path.
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+// override, but default to Google's supported Gemini 3.8 Flash model.
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
 const GEMINI_TIMEOUT_MS = 45_000;
 const MAX_BYTES = 10 * 1024 * 1024;
 const VALID_TYPES = ['image/jpeg', 'image/png', 'image/webp'];

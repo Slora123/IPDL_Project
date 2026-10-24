@@ -137,17 +137,35 @@ export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () =>
   };
 
   const processAudio = async (audioBlob: Blob) => {
+    if (!audioBlob || audioBlob.size < 500) {
+      setStage("idle");
+      toast({
+        title: "Audio too short",
+        description: "Please speak clearly while recording your transaction.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     try {
-      // Step 1: Send to SarvamAI transcribe+translate pipeline
       setStage("processing_speech");
 
+      const bcpLang = language === "hi" ? "hi-IN" : language === "mr" ? "mr-IN" : "en-IN";
+      const fileExt = audioBlob.type.includes("mp4")
+        ? "mp4"
+        : audioBlob.type.includes("ogg")
+        ? "ogg"
+        : audioBlob.type.includes("wav")
+        ? "wav"
+        : "webm";
+
       const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.webm');
-      formData.append('target_lang', language || 'en-IN');
+      formData.append("audio", audioBlob, `recording.${fileExt}`);
+      formData.append("target_lang", bcpLang);
 
       setStage("converting_english");
-      const response = await api.post('/api/voice/process', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const response = await api.post("/api/voice/process", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
         timeout: 60000
       });
 
@@ -155,22 +173,29 @@ export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () =>
 
       if (!response.data.success) {
         setStage("error");
-        const msg = response.data.message || 'No transaction detected. Try: "I spent 250 rupees on groceries"';
+        const msg =
+          response.data.message ||
+          response.data.error ||
+          'No transaction detected. Try: "I spent 250 rupees on groceries"';
         setErrorMessage(msg);
-        toast({ title: "No Transaction Found", description: msg, variant: "destructive" });
+        toast({ title: "No Transaction Detected", description: msg, variant: "destructive" });
         return;
       }
 
       // Step 2: Show transcription + parsed transaction for user review
-      setTranscript(response.data.transcript || '');
-      setEnglishText(response.data.englishTranslation || '');
+      setTranscript(response.data.transcript || "");
+      setEnglishText(response.data.englishTranslation || "");
       setTransactionPreview(response.data.transaction);
       setStage("ready_to_confirm");
       setShowConfirmation(true);
 
     } catch (error: any) {
       setStage("error");
-      const msg = error.response?.data?.error || error.message || "Failed to process audio.";
+      const msg =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to process audio.";
       setErrorMessage(msg);
       toast({ title: "Processing Error", description: msg, variant: "destructive" });
     }
