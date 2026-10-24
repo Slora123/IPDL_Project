@@ -33,10 +33,7 @@ export default function LoanAlert() {
 
   const fetchLoans = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await api.get(`/api/loans`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const res = await api.get(`/api/loans`);
       setLoans(res.data);
     } catch (error) {
       console.error('Error fetching loans:', error);
@@ -48,10 +45,7 @@ export default function LoanAlert() {
   const handleAddLoan = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem('token');
-      await api.post(`/api/loans`, newLoan, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.post(`/api/loans`, newLoan);
       setNewLoan({ lender: "", amount: "", dueDate: "" });
       setShowAddForm(false);
       fetchLoans();
@@ -62,12 +56,9 @@ export default function LoanAlert() {
 
   const handleToggleReminder = async (loan: Loan) => {
     try {
-      const token = localStorage.getItem('token');
       await api.put(`/api/loans/${loan.id}`, {
         ...loan,
         reminderEnabled: !loan.reminderEnabled
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
       });
       fetchLoans();
     } catch (error) {
@@ -77,10 +68,7 @@ export default function LoanAlert() {
 
   const handleDeleteLoan = async (id: string) => {
     try {
-      const token = localStorage.getItem('token');
-      await api.delete(`/api/loans/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`/api/loans/${id}`);
       fetchLoans();
     } catch (error) {
       console.error('Error deleting loan:', error);

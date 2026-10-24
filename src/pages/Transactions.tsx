@@ -62,11 +62,8 @@ export default function Transactions() {
   const [dateRangeEnd, setDateRangeEnd] = useState<string>("");
 
   const fetchTransactions = async () => {
-    const token = localStorage.getItem('token');
     try {
-      const response = await api.get('/api/transactions', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/api/transactions');
       setTransactions(response.data);
     } catch (error) {
       console.error('Error fetching transactions:', error);
@@ -80,11 +77,8 @@ export default function Transactions() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    const token = localStorage.getItem('token');
     try {
-      await api.delete(`/api/transactions/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`/api/transactions/${id}`);
       setTransactions(transactions.filter(t => t.id !== id));
     } catch (error) {
       console.error('Error deleting transaction:', error);

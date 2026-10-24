@@ -34,12 +34,7 @@ export default function Reports() {
   const generateReport = async (reportId: string) => {
     setLoading(reportId);
     try {
-      const token = localStorage.getItem('token');
-      const response = await api.post(
-        `/api/reports/generate/${reportId}`,
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      const response = await api.post(`/api/reports/generate/${reportId}`, {});
 
       setGeneratedReport(response.data);
     } catch (error: any) {

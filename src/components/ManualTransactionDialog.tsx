@@ -45,7 +45,6 @@ export function ManualTransactionDialog({
         setLoading(true);
 
         try {
-            const token = localStorage.getItem("token");
             console.log("Submitting transaction:", { ...formData, amount: parseFloat(formData.amount) });
 
             const response = await api.post(
@@ -54,9 +53,6 @@ export function ManualTransactionDialog({
                     ...formData,
                     amount: parseFloat(formData.amount),
                     voiceInput: null, // Explicitly null for manual entry
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` },
                 }
             );
 

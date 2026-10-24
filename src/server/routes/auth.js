@@ -33,9 +33,11 @@ function safeUser(row) {
 
 // ── Middleware: verify JWT ───────────────────────────────────────────────────
 export async function requireAuth(req, res, next) {
-  const header = req.headers.authorization || '';
-  const token  = header.startsWith('Bearer ') ? header.slice(7) : null;
-  if (!token) return res.status(401).json({ error: 'Not authenticated' });
+  const header = (req.headers.authorization || '').trim();
+  const token  = header.startsWith('Bearer ') ? header.slice(7).trim() : null;
+  if (!token || token === 'null' || token === 'undefined') {
+    return res.status(401).json({ error: 'Not authenticated' });
+  }
   try {
     const payload = jwt.verify(token, JWT_SECRET);
     const user = await findUserById(payload.sub);

@@ -20,18 +20,12 @@ export default function Spending() {
 
   const fetchSpendingData = async () => {
     try {
-      const token = localStorage.getItem('token');
-
       // Fetch today's stats
-      const statsRes = await api.get('/api/stats', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const statsRes = await api.get('/api/stats');
       setTodayExpenses(statsRes.data.expenses);
 
       // Fetch spending analytics
-      const analyticsRes = await api.get('/api/analytics/spending', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const analyticsRes = await api.get('/api/analytics/spending');
       setTopCategories(analyticsRes.data.topCategories || []);
     } catch (error) {
       console.error('Error fetching spending data:', error);

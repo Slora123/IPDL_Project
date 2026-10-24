@@ -52,7 +52,8 @@ async function callSarvam(audioBuffer, mimeType, mode) {
     headers: {
       "api-subscription-key": SARVAM_API_KEY
     },
-    body: formData
+    body: formData,
+    signal: AbortSignal.timeout(12000)
   });
 
   const result = await response.json().catch(() => ({}));
@@ -79,19 +80,37 @@ export async function transcribeAndTranslate(
     throw new Error("No valid audio data was provided.");
   }
 
-  // Run transcribe and translate concurrently to halve speech processing latency
+  let transcriptionMs = 0;
+  let translationMs = 0;
+
+  // Run transcribe and translate in parallel for non-blocking execution
   const [originalResult, translatedResult] = await Promise.all([
-    callSarvam(audioBuffer, mimeType, "transcribe"),
-    callSarvam(audioBuffer, mimeType, "translate").catch(err => {
-      console.warn("[Voice] Sarvam translation fallback:", err.message);
-      return {};
-    })
+    (async () => {
+      const start = performance.now();
+      const res = await callSarvam(audioBuffer, mimeType, "transcribe");
+      transcriptionMs = Math.round(performance.now() - start);
+      return res;
+    })(),
+    (async () => {
+      const start = performance.now();
+      const res = await callSarvam(audioBuffer, mimeType, "translate").catch(err => {
+        console.warn("[Voice] Sarvam translation fallback:", err.message);
+        return {};
+      });
+      translationMs = Math.round(performance.now() - start);
+      return res;
+    })()
   ]);
 
   const transcript = String(originalResult?.transcript || "").trim();
-  const englishTranslation = String(
-    translatedResult?.transcript || transcript
-  ).trim();
+  const rawTranslation = String(translatedResult?.transcript || "").trim();
+  const sourceLanguage = originalResult?.language_code || "unknown";
+
+  // If source is already English or translation is empty, use transcript directly
+  const englishTranslation =
+    sourceLanguage === "en-IN" || !rawTranslation
+      ? transcript
+      : rawTranslation;
 
   if (!transcript) {
     throw new Error("No speech could be recognized in the audio.");
@@ -99,8 +118,12 @@ export async function transcribeAndTranslate(
 
   return {
     transcript,
-    englishTranslation: englishTranslation || transcript,
-    sourceLanguage: originalResult?.language_code || "unknown"
+    englishTranslation,
+    sourceLanguage,
+    timing: {
+      transcriptionMs,
+      translationMs
+    }
   };
 }
 
@@ -119,10 +142,11 @@ export async function parseFinancialIntent(
 
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-  const model = genAI.getGenerativeModel({
-    model: GEMINI_MODEL,
-    generationConfig: {
+  const getGenerationConfig = (modelName) => {
+    const config = {
       responseMimeType: "application/json",
+      temperature: 0.1,
+      maxOutputTokens: 256,
       responseSchema: {
         type: "OBJECT",
         properties: {
@@ -147,17 +171,26 @@ export async function parseFinancialIntent(
           "confidence"
         ]
       }
+    };
+    if (modelName && modelName.includes("3.8")) {
+      config.thinkingConfig = { thinkingBudget: 0 };
     }
-  });
+    return config;
+  };
+
+  const isBilingual =
+    originalText &&
+    text &&
+    String(originalText).trim().toLowerCase() !== String(text).trim().toLowerCase();
+
+  const speechContext = isBilingual
+    ? `Original speech: ${String(originalText).slice(0, 500)}\nEnglish translation: ${String(text).slice(0, 500)}`
+    : `Speech: ${String(text || originalText).slice(0, 500)}`;
 
   const prompt = `
 You extract financial transactions from speech for Trackify, an Indian business & personal expense tracker.
 
-Original speech:
-${String(originalText || "").slice(0, 3000)}
-
-English translation:
-${String(text || "").slice(0, 3000)}
+${speechContext}
 
 Understand the complete natural meaning across English, Hindi, Marathi, and mixed languages.
 Never confuse money spent (expense) with money earned / received (income).
@@ -186,37 +219,80 @@ Classification Rules:
 - Never invent missing details or assume numbers not in the speech.
 `;
 
+  const candidateModels = [
+    GEMINI_MODEL,
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash"
+  ].filter((m, i, arr) => m && arr.indexOf(m) === i);
+
   let lastError;
   let parsed;
+  let usedModel = null;
 
-  // Retry up to 2 times for transient 503/429 spikes
-  for (let attempt = 0; attempt <= 2; attempt++) {
+  for (const candidate of candidateModels) {
     try {
-      const result = await model.generateContent(prompt);
-      parsed = JSON.parse(result.response.text());
-      break;
-    } catch (err) {
-      lastError = err;
-      const status = err?.status || err?.statusCode;
-      const msg = String(err?.message || "");
-      const isTransient =
-        status === 503 ||
-        status === 429 ||
-        msg.includes("503") ||
-        msg.includes("429") ||
-        msg.includes("high demand");
+      const model = genAI.getGenerativeModel({
+        model: candidate,
+        generationConfig: getGenerationConfig(candidate)
+      });
 
-      if (isTransient && attempt < 2) {
-        console.warn(
-          `[Voice] Gemini transient error (${status || "busy"}), retrying in ${
-            1000 * (attempt + 1)
-          }ms... (attempt ${attempt + 1}/2)`
-        );
-        await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
-        continue;
+      for (let attempt = 0; attempt <= 1; attempt++) {
+        try {
+          const result = await Promise.race([
+            model.generateContent(prompt),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("Gemini transaction analysis timed out")), 15000)
+            )
+          ]);
+          const textResponse = result.response.text();
+          const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
+          parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(textResponse);
+          usedModel = candidate;
+          break;
+        } catch (attemptErr) {
+          lastError = attemptErr;
+          const status = attemptErr?.status || attemptErr?.statusCode;
+          const msg = String(attemptErr?.message || "").toLowerCase();
+          const isTransient =
+            status === 503 ||
+            msg.includes("503") ||
+            msg.includes("high demand");
+
+          if (isTransient && attempt === 0) {
+            console.warn(`[Voice] Model ${candidate} transient spike, quick retry in 400ms...`);
+            await new Promise(r => setTimeout(r, 400));
+            continue;
+          }
+          throw attemptErr;
+        }
       }
-      throw err;
+
+      if (parsed) {
+        if (candidate !== GEMINI_MODEL) {
+          console.log(`[Voice] Successfully parsed transaction using fallback model: ${candidate}`);
+        }
+        break;
+      }
+    } catch (modelErr) {
+      lastError = modelErr;
+      const status = modelErr?.status || modelErr?.statusCode;
+      const msg = String(modelErr?.message || "").toLowerCase();
+      console.warn(`[Voice] Model ${candidate} failed (${status || msg.slice(0, 100)}), trying fallback...`);
     }
+  }
+
+  if (!parsed) {
+    if (lastError) {
+      const status = lastError?.status || lastError?.statusCode;
+      const msg = String(lastError?.message || "").toLowerCase();
+      if (status === 429 || msg.includes("429") || msg.includes("quota")) {
+        const quotaErr = new Error("Gemini AI daily quota limit reached on Free Tier. Please check your Gemini API plan.");
+        quotaErr.status = 429;
+        throw quotaErr;
+      }
+      throw lastError;
+    }
+    return null;
   }
 
   const allowedTypes = ["income", "expense", "unknown"];

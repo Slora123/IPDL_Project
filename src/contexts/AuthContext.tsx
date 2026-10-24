@@ -56,7 +56,7 @@ const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(
-    () => localStorage.getItem(TOKEN_KEY)
+    () => localStorage.getItem(TOKEN_KEY) || localStorage.getItem('token')
   );
   const [loading, setLoading] = useState(true);
 
@@ -80,10 +80,13 @@ const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({
   // Keep the API authorization header and stored token synchronized.
   useEffect(() => {
     if (token) {
-      localStorage.setItem(TOKEN_KEY, token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token} `;
+      const cleanToken = token.trim();
+      localStorage.setItem(TOKEN_KEY, cleanToken);
+      localStorage.setItem('token', cleanToken);
+      api.defaults.headers.common['Authorization'] = `Bearer ${cleanToken}`;
     } else {
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('token');
       delete api.defaults.headers.common['Authorization'];
     }
   }, [token]);
@@ -93,7 +96,8 @@ const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({
     let active = true;
 
     const initializeAuth = async () => {
-      const storedToken = localStorage.getItem(TOKEN_KEY);
+      const storedToken =
+        localStorage.getItem(TOKEN_KEY) || localStorage.getItem('token');
 
       if (!storedToken) {
         if (active) {
@@ -106,7 +110,7 @@ const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({
 
       // Set the header before requesting the current user.
       api.defaults.headers.common['Authorization'] =
-        `Bearer ${storedToken} `;
+        `Bearer ${storedToken.trim()}`;
 
       try {
         const { data } = await api.get<{ user: AuthUser }>(
@@ -173,11 +177,12 @@ const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({
       }
 
       // Persist the token before updating authenticated state.
-      localStorage.setItem(TOKEN_KEY, data.token);
-      api.defaults.headers.common['Authorization'] =
-        `Bearer ${data.token} `;
+      const cleanToken = data.token.trim();
+      localStorage.setItem(TOKEN_KEY, cleanToken);
+      localStorage.setItem('token', cleanToken);
+      api.defaults.headers.common['Authorization'] = `Bearer ${cleanToken}`;
 
-      setToken(data.token);
+      setToken(cleanToken);
       setUser(data.user);
       syncUserToPrefs(data.user);
       setLoading(false);
@@ -211,11 +216,12 @@ const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({
         );
       }
 
-      localStorage.setItem(TOKEN_KEY, data.token);
-      api.defaults.headers.common['Authorization'] =
-        `Bearer ${data.token} `;
+      const cleanToken = data.token.trim();
+      localStorage.setItem(TOKEN_KEY, cleanToken);
+      localStorage.setItem('token', cleanToken);
+      api.defaults.headers.common['Authorization'] = `Bearer ${cleanToken}`;
 
-      setToken(data.token);
+      setToken(cleanToken);
       setUser(data.user);
       syncUserToPrefs(data.user);
       setLoading(false);
@@ -226,6 +232,7 @@ const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({
   // ── Logout ────────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem('token');
     delete api.defaults.headers.common['Authorization'];
 
     setUser(null);
@@ -238,6 +245,7 @@ const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     const handleSessionExpired = () => {
       localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('token');
       delete api.defaults.headers.common['Authorization'];
 
       setUser(null);

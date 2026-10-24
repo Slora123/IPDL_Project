@@ -73,7 +73,6 @@ export function EditTransactionDialog({
         setLoading(true);
 
         try {
-            const token = localStorage.getItem("token");
             console.log("Updating transaction:", { ...formData, amount: parseFloat(formData.amount) });
 
             const response = await api.patch(
@@ -81,9 +80,6 @@ export function EditTransactionDialog({
                 {
                     ...formData,
                     amount: parseFloat(formData.amount),
-                },
-                {
-                    headers: { Authorization: `Bearer ${token}` },
                 }
             );
 

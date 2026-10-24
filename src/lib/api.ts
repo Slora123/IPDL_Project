@@ -21,6 +21,30 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
+// ── Request interceptor — attach token and sanitize bad Authorization headers ─
+api.interceptors.request.use((config) => {
+  const existingAuth = String(config.headers?.Authorization || config.headers?.authorization || '').trim();
+  const isInvalidHeader =
+    !existingAuth ||
+    existingAuth === 'Bearer' ||
+    existingAuth === 'Bearer null' ||
+    existingAuth === 'Bearer undefined';
+
+  if (isInvalidHeader) {
+    const token =
+      localStorage.getItem('trackify_token') ||
+      localStorage.getItem('token');
+
+    if (token && token !== 'null' && token !== 'undefined') {
+      config.headers.Authorization = `Bearer ${token.trim()}`;
+    } else {
+      delete config.headers.Authorization;
+      delete config.headers.authorization;
+    }
+  }
+  return config;
+});
+
 // ── Response interceptor — global 401 handler ──────────────────────────────
 api.interceptors.response.use(
   // Pass through successful responses unchanged
@@ -30,25 +54,22 @@ api.interceptors.response.use(
     const status = error.response?.status;
 
     if (status === 401) {
-      // Replace the raw server message with a user-friendly one so the user
-      // sees "Session expired — please log in again" rather than
-      // "User not found" or "Invalid or expired token".
       const serverMsg: string = error.response?.data?.error ?? '';
+      const hasStoredToken =
+        Boolean(localStorage.getItem('trackify_token') || localStorage.getItem('token'));
+
       const isSessionGone =
-        serverMsg === 'User not found' ||
-        serverMsg === 'Invalid or expired token' ||
-        serverMsg === 'Not authenticated';
+        hasStoredToken &&
+        (serverMsg === 'User not found' ||
+         serverMsg === 'Invalid or expired token' ||
+         serverMsg.includes('session no longer matches'));
 
       if (isSessionGone) {
-        // Swap the error message the caller will read so every page shows a
-        // consistent, friendly message instead of an internal server string.
         if (error.response?.data) {
           error.response.data.error =
             'Your session has expired. Please log in again.';
         }
 
-        // Notify AuthContext (via a window event) to clear the token and
-        // navigate to /login. We use an event to avoid a circular import.
         window.dispatchEvent(new CustomEvent('trackify:session-expired'));
       }
     }

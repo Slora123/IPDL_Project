@@ -35,6 +35,7 @@ const app = express();
 // Correlate diagnostics without recording request bodies, tokens, or personal data.
 app.use((req, res, next) => {
   req.id = randomUUID();
+  req._startTime = performance.now();
   res.setHeader('X-Request-Id', req.id);
   console.log(`[${new Date().toISOString()}] ${req.id} ${req.method} ${req.path}`);
   next();
