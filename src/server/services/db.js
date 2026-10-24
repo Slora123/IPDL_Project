@@ -329,9 +329,13 @@ export async function getWeeklyStats(userId, clientDate) {
 }
 
 export async function getCategorySpending(userId) {
-  const txs  = (await getAllTransactions(userId)).filter(t => t.type === 'expense');
+  const txs  = (await getAllTransactions(userId)).filter(t => String(t.type || '').trim().toLowerCase() === 'expense');
   const map  = {};
-  for (const t of txs) map[t.category] = (map[t.category] || 0) + t.amount;
+  for (const t of txs) {
+    const rawCat = typeof t.category === 'string' ? t.category.trim() : '';
+    const cat = rawCat || 'General';
+    map[cat] = (map[cat] || 0) + (Number(t.amount) || 0);
+  }
   const total  = Object.values(map).reduce((s, v) => s + v, 0) || 1;
   const COLORS = ['#f87171', '#60a5fa', '#facc15', '#4ade80', '#c084fc', '#fb923c', '#a78bfa'];
   const sorted = Object.entries(map)

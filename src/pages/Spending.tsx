@@ -1,12 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CategoryChart } from "@/components/charts/CategoryChart";
 import { StatsCard } from "@/components/StatsCard";
 import { TrendingDown } from "lucide-react";
 import { useI18n } from "@/contexts/I18nContext";
 import api from "@/lib/api";
-
-
 
 const getTodayDateStr = () => {
   const d = new Date();
@@ -17,27 +15,32 @@ export default function Spending() {
   const { t, tCategory } = useI18n();
   const [loading, setLoading] = useState(true);
   const [todayExpenses, setTodayExpenses] = useState(0);
+  const [expenseTrend, setExpenseTrend] = useState("0%");
   const [topCategories, setTopCategories] = useState<any[]>([]);
 
-  const fetchSpendingData = async () => {
+  const fetchSpendingData = useCallback(async () => {
     try {
       const clientDate = getTodayDateStr();
-      // Fetch today's stats with client local date
-      const statsRes = await api.get('/api/stats', {
-        params: { date: clientDate },
-        headers: { 'x-client-date': clientDate },
-      });
-      setTodayExpenses(statsRes.data.expenses);
+      // Fetch today's stats and category spending concurrently
+      const [statsRes, analyticsRes] = await Promise.allSettled([
+        api.get('/api/stats', { params: { date: clientDate } }),
+        api.get('/api/analytics/spending'),
+      ]);
 
-      // Fetch spending analytics
-      const analyticsRes = await api.get('/api/analytics/spending');
-      setTopCategories(analyticsRes.data.topCategories || []);
+      if (statsRes.status === 'fulfilled' && statsRes.value?.data) {
+        setTodayExpenses(statsRes.value.data.expenses || 0);
+        setExpenseTrend(statsRes.value.data.trends?.expenses || "0%");
+      }
+
+      if (analyticsRes.status === 'fulfilled' && analyticsRes.value?.data) {
+        setTopCategories(analyticsRes.value.data.topCategories || []);
+      }
     } catch (error) {
       console.error('Error fetching spending data:', error);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchSpendingData();
@@ -45,7 +48,7 @@ export default function Spending() {
     const handleSaved = () => fetchSpendingData();
     window.addEventListener('trackify:transaction-saved', handleSaved);
     return () => window.removeEventListener('trackify:transaction-saved', handleSaved);
-  }, []);
+  }, [fetchSpendingData]);
 
   if (loading) {
     return <div className="p-6">{t("loading", "common")}</div>;
@@ -62,7 +65,7 @@ export default function Spending() {
           title={t("todays_expenses", "spending")}
           value={`₹${todayExpenses.toLocaleString()}`}
           icon={TrendingDown}
-          trend="-5%"
+          trend={expenseTrend}
           variant="expense"
         />
         <Card className="lg:col-span-2">
@@ -70,7 +73,7 @@ export default function Spending() {
             <CardTitle>{t("title", "spending")}</CardTitle>
           </CardHeader>
           <CardContent>
-            <CategoryChart data={topCategories.map(c => ({ ...c, name: tCategory(c.name), value: c.amount }))} />
+            <CategoryChart data={topCategories.map(c => ({ ...c, name: c.name, value: c.amount || c.value || 0 }))} />
           </CardContent>
         </Card>
       </div>
@@ -90,7 +93,7 @@ export default function Spending() {
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: category.color || 'gray' }}></div>
                     <span>{tCategory(category.name)}</span>
                   </div>
-                  <span className="font-semibold">₹{category.amount.toLocaleString()}</span>
+                  <span className="font-semibold">₹{(category.amount || category.value || 0).toLocaleString()}</span>
                 </li>
               ))}
             </ul>
