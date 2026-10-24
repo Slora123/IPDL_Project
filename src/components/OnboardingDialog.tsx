@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { usePreferences, PersonaType } from "@/contexts/PreferencesContext";
+import { usePreferences } from "@/contexts/PreferencesContext";
 import { useI18n } from "@/contexts/I18nContext";
 
 interface OnboardingDialogProps {
@@ -44,26 +44,27 @@ export const OnboardingDialog: React.FC<OnboardingDialogProps> = ({ open, onClos
         </DialogHeader>
         <div className="grid gap-4 py-2">
           <div className="grid gap-2">
-            <Label htmlFor="name" className="text-black font-medium">Name</Label>
-            <Input id="name" className="bg-white border-gray-300 text-black" value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="Your Name" />
+            <Label htmlFor="onboard-name" className="text-black font-medium">Name</Label>
+            <Input id="onboard-name" className="bg-white border-gray-300 text-black" value={inputName} onChange={(e) => setInputName(e.target.value)} placeholder="Your Name" />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="business" className="text-black font-medium">Business Name</Label>
-            <Input id="business" className="bg-white border-gray-300 text-black" value={inputBusiness} onChange={(e) => setInputBusiness(e.target.value)} placeholder="Your Business Name" />
+            <Label htmlFor="onboard-business" className="text-black font-medium">Business Name</Label>
+            <Input id="onboard-business" className="bg-white border-gray-300 text-black" value={inputBusiness} onChange={(e) => setInputBusiness(e.target.value)} placeholder="Your Business Name" />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="phone" className="text-black font-medium">Phone Number</Label>
-            <Input id="phone" className="bg-white border-gray-300 text-black" value={inputPhone} onChange={(e) => setInputPhone(e.target.value)} placeholder="Your Phone Number" />
+            <Label htmlFor="onboard-phone" className="text-black font-medium">Phone Number</Label>
+            <Input id="onboard-phone" className="bg-white border-gray-300 text-black" value={inputPhone} onChange={(e) => setInputPhone(e.target.value)} placeholder="Your Phone Number" />
           </div>
           <div className="grid gap-2">
-            <Label htmlFor="language" className="text-black font-medium">{t("language")}</Label>
+            <Label htmlFor="onboard-language" className="text-black font-medium">{t("language")}</Label>
             <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
-              <SelectTrigger id="language" className="bg-white border-gray-300 text-black">
+              <SelectTrigger id="onboard-language" className="bg-white border-gray-300 text-black">
                 <SelectValue placeholder={t("language")} />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="en">English</SelectItem>
-                <SelectItem value="hi">हिंदी</SelectItem>
+                <SelectItem value="hi">हिंदी (Hindi)</SelectItem>
+                <SelectItem value="mr">मराठी (Marathi)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -77,5 +78,3 @@ export const OnboardingDialog: React.FC<OnboardingDialogProps> = ({ open, onClos
     </Dialog>
   );
 };
-
-

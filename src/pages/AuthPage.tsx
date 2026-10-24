@@ -1,20 +1,37 @@
 // src/pages/AuthPage.tsx
 // Single auth page with Login / Register tabs.
 // Matches the existing dark design system (bg-background, card, gradients).
+// On register: collects language preference and saves it to PreferencesContext.
+// On login: restores preferences from stored user data.
 
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Wallet, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Wallet, Eye, EyeOff, Loader2, Globe } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePreferences } from '@/contexts/PreferencesContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+
+const LANGUAGE_OPTIONS = [
+  { value: 'en', label: 'English', native: 'English' },
+  { value: 'hi', label: 'Hindi', native: 'हिंदी' },
+  { value: 'mr', label: 'Marathi', native: 'मराठी' },
+];
 
 export default function AuthPage() {
   const { login, register } = useAuth();
+  const { setLanguage, setName, setBusinessName, setPhone } = usePreferences();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -36,6 +53,7 @@ export default function AuthPage() {
   const [regConfirm,      setRegConfirm]      = useState('');
   const [regBusiness,     setRegBusiness]     = useState('');
   const [regPhone,        setRegPhone]        = useState('');
+  const [regLanguage,     setRegLanguage]     = useState('en');
   const [regLoading,      setRegLoading]      = useState(false);
   const [regError,        setRegError]        = useState('');
   const [showRegPw,       setShowRegPw]       = useState(false);
@@ -79,6 +97,13 @@ export default function AuthPage() {
     setRegLoading(true);
     try {
       await register(regName, regEmail, regPassword, regBusiness, regPhone);
+
+      // ── Save preferences so OnboardingDialog never appears ──────────────
+      setName(regName);
+      setBusinessName(regBusiness || regName);
+      setPhone(regPhone || 'N/A');
+      setLanguage(regLanguage);
+
       toast({ title: 'Account created!', description: `Welcome, ${regName}!` });
       navigate(from, { replace: true });
     } catch (err: any) {
@@ -222,6 +247,30 @@ export default function AuthPage() {
                     onChange={e => setRegBusiness(e.target.value)}
                     disabled={regLoading}
                   />
+                </div>
+
+                {/* ── Language Selection ───────────────────────────────── */}
+                <div className="space-y-2">
+                  <Label htmlFor="reg-language" className="flex items-center gap-1">
+                    <Globe className="h-3.5 w-3.5" />
+                    Preferred Language <span className="text-destructive">*</span>
+                  </Label>
+                  <Select value={regLanguage} onValueChange={setRegLanguage} disabled={regLoading}>
+                    <SelectTrigger id="reg-language">
+                      <SelectValue placeholder="Select Language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGE_OPTIONS.map(lang => (
+                        <SelectItem key={lang.value} value={lang.value}>
+                          <span className="font-medium">{lang.native}</span>
+                          <span className="ml-2 text-muted-foreground text-sm">({lang.label})</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">
+                    The entire app UI will be shown in this language.
+                  </p>
                 </div>
 
                 <div className="space-y-2">

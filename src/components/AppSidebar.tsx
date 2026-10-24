@@ -24,31 +24,51 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar";
+import { useTranslatedUI } from "@/hooks/useTranslatedUI";
 
-const navigationItems = [
-  { title: "Dashboard", url: "/", icon: Home },
-  { title: "Analytics", url: "/analytics", icon: BarChart3 },
-  { title: "Transactions", url: "/transactions", icon: Wallet },
-  { title: "Spending", url: "/spending", icon: CreditCard },
-  { title: "Scan Bill", url: "/scan", icon: Scan },
-  { title: "Trending", url: "/trending", icon: Flame },
-  { title: "Reports", url: "/reports", icon: PieChart },
-];
-
-const learningItems = [
-  { title: "Financial Tips", url: "/learn", icon: BookOpen },
-  { title: "Growth Insights", url: "/insights", icon: TrendingUp },
-];
-
-const settingsItems = [
-  { title: "Settings", url: "/settings", icon: Settings },
-  { title: "Help", url: "/help", icon: HelpCircle },
-];
+const NAV_KEYS = {
+  dashboard: "Dashboard",
+  analytics: "Analytics",
+  transactions: "Transactions",
+  spending: "Spending",
+  scanBill: "Scan Bill",
+  trending: "Trending",
+  reports: "Reports",
+  financialTips: "Financial Tips",
+  growthInsights: "Growth Insights",
+  settings: "Settings",
+  help: "Help",
+  mainMenu: "Main Menu",
+  learnAndGrow: "Learn & Grow",
+  support: "Support",
+  financeTracker: "Finance Tracker",
+};
 
 export function AppSidebar() {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const location = useLocation();
   const currentPath = location.pathname;
+  const ui = useTranslatedUI(NAV_KEYS);
+
+  const navigationItems = [
+    { titleKey: "dashboard", url: "/", icon: Home },
+    { titleKey: "analytics", url: "/analytics", icon: BarChart3 },
+    { titleKey: "transactions", url: "/transactions", icon: Wallet },
+    { titleKey: "spending", url: "/spending", icon: CreditCard },
+    { titleKey: "scanBill", url: "/scan", icon: Scan },
+    { titleKey: "trending", url: "/trending", icon: Flame },
+    { titleKey: "reports", url: "/reports", icon: PieChart },
+  ];
+
+  const learningItems = [
+    { titleKey: "financialTips", url: "/learn", icon: BookOpen },
+    { titleKey: "growthInsights", url: "/insights", icon: TrendingUp },
+  ];
+
+  const settingsItems = [
+    { titleKey: "settings", url: "/settings", icon: Settings },
+    { titleKey: "help", url: "/help", icon: HelpCircle },
+  ];
 
   const isActive = (path: string) => currentPath === path;
   const getNavClass = ({ isActive }: { isActive: boolean }) =>
@@ -74,7 +94,7 @@ export function AppSidebar() {
             {!isCollapsed && (
               <div>
                 <h2 className="font-bold text-xl sm:text-lg">Trackify</h2>
-                <p className="text-sm sm:text-xs text-muted-foreground">Finance Tracker</p>
+                <p className="text-sm sm:text-xs text-muted-foreground">{ui.financeTracker}</p>
               </div>
             )}
           </div>
@@ -82,15 +102,15 @@ export function AppSidebar() {
 
         {/* Main Navigation */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sm sm:text-xs mt-2 sm:mt-0">Main Menu</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sm sm:text-xs mt-2 sm:mt-0">{ui.mainMenu}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {navigationItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton asChild className="h-12 sm:h-8" onClick={handleNavClick}>
                     <NavLink to={item.url} end className={getNavClass}>
                       <item.icon className="h-5 w-5 sm:h-4 sm:w-4" />
-                      {!isCollapsed && <span className="text-base sm:text-sm">{item.title}</span>}
+                      {!isCollapsed && <span className="text-base sm:text-sm">{ui[item.titleKey as keyof typeof ui]}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -101,15 +121,15 @@ export function AppSidebar() {
 
         {/* Learning Section */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sm sm:text-xs mt-2 sm:mt-0">Learn &amp; Grow</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sm sm:text-xs mt-2 sm:mt-0">{ui.learnAndGrow}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {learningItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton asChild className="h-12 sm:h-8" onClick={handleNavClick}>
                     <NavLink to={item.url} className={getNavClass}>
                       <item.icon className="h-5 w-5 sm:h-4 sm:w-4" />
-                      {!isCollapsed && <span className="text-base sm:text-sm">{item.title}</span>}
+                      {!isCollapsed && <span className="text-base sm:text-sm">{ui[item.titleKey as keyof typeof ui]}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -120,15 +140,15 @@ export function AppSidebar() {
 
         {/* Settings */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sm sm:text-xs mt-2 sm:mt-0">Support</SidebarGroupLabel>
+          <SidebarGroupLabel className="text-sm sm:text-xs mt-2 sm:mt-0">{ui.support}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {settingsItems.map((item) => (
-                <SidebarMenuItem key={item.title}>
+                <SidebarMenuItem key={item.titleKey}>
                   <SidebarMenuButton asChild className="h-12 sm:h-8" onClick={handleNavClick}>
                     <NavLink to={item.url} className={getNavClass}>
                       <item.icon className="h-5 w-5 sm:h-4 sm:w-4" />
-                      {!isCollapsed && <span className="text-base sm:text-sm">{item.title}</span>}
+                      {!isCollapsed && <span className="text-base sm:text-sm">{ui[item.titleKey as keyof typeof ui]}</span>}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

@@ -33,6 +33,7 @@ export default function Settings() {
   const languages = [
     { value: "en", label: "English", native: "English" },
     { value: "hi", label: "Hindi", native: "हिन्दी" },
+    { value: "mr", label: "Marathi", native: "मराठी" },
   ];
 
   useEffect(() => {

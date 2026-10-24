@@ -129,7 +129,7 @@ const translations: Translations = {
       student: "विद्यार्थी",
       business: "व्यवसाय",
       common: "सामान्य",
-      continue: "पुढ चालू ठेवा",
+      continue: "पुढे चालू ठेवा",
       save: "सेव्ह करा",
       cancel: "रद्द करा",
       edit: "संपादित करा",
@@ -150,8 +150,6 @@ const translations: Translations = {
       transactions: "व्यवहार",
       income_vs_expenses: "उत्पन्न विरुद्ध खर्च",
       profit_loss_trend: "नफा आणि तोटा कल",
-      profit_trend: "नफा कल",
-      daily_profit_tracking: "दैनंदिन नफा/तोटा ट्रॅकिंग",
       category_breakdown: "श्रेणी विश्लेषण",
       recent_transactions: "अलीकडील व्यवहार",
       sale: "विक्री",
@@ -211,5 +209,3 @@ export const useI18n = (): I18nContextValue => {
   if (!ctx) throw new Error("useI18n must be used within I18nProvider");
   return ctx;
 };
-
-

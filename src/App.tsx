@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { PreferencesProvider, usePreferences } from "@/contexts/PreferencesContext";
 import { I18nProvider } from "@/contexts/I18nContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { OnboardingDialog } from "@/components/OnboardingDialog";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { Layout } from "./pages/Layout";
@@ -38,8 +38,19 @@ function Protected({ children }: { children: React.ReactNode }) {
 
 const AppContent = () => {
   const { language, name, businessName, phone } = usePreferences();
+  const { isAuthenticated, loading } = useAuth();
   const { pathname } = useLocation();
-  const needsOnboarding = pathname !== "/login" && (!language || !name || !businessName || !phone);
+
+  // Show onboarding ONLY when:
+  // 1. Not on the /login page
+  // 2. Auth check is done (not loading)
+  // 3. User is NOT authenticated (authenticated users provided this info during registration)
+  // 4. Some preferences are still missing (catches pre-existing accounts that never set them)
+  const needsOnboarding =
+    !loading &&
+    !isAuthenticated &&
+    pathname !== "/login" &&
+    (!language || !name || !businessName || !phone);
 
   return (
     <>

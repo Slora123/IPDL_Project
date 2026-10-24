@@ -43,7 +43,7 @@ app.use((req, res, next) => {
 // -- middleware ----------------------------------------------------------------
 app.use(cors({
   origin: allowedOrigin,
-  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json({ limit: '50mb' }));
@@ -53,6 +53,47 @@ app.use(express.urlencoded({ extended: true }));
 
 // Auth (register / login / me) — public, no auth middleware needed on these routes
 app.use('/api/auth', authRoutes);
+
+// ── Sarvam translation proxy ──────────────────────────────────────────────────
+// Keeps the SARVAM_API_KEY server-side; frontend calls this instead of Sarvam directly.
+app.post('/api/translate', async (req, res) => {
+  try {
+    const { text, sourceLang = 'en-IN', targetLang } = req.body;
+    if (!text || !targetLang) {
+      return res.status(400).json({ error: 'text and targetLang are required' });
+    }
+    const SARVAM_KEY = process.env.SARVAM_API_KEY;
+    if (!SARVAM_KEY) {
+      return res.status(500).json({ error: 'SARVAM_API_KEY not configured' });
+    }
+    const sarvamRes = await fetch('https://api.sarvam.ai/translate', {
+      method: 'POST',
+      headers: {
+        'api-subscription-key': SARVAM_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        input: text,
+        source_language_code: sourceLang,
+        target_language_code: targetLang,
+        speaker_gender: 'Female',
+        mode: 'formal',
+        model: 'mayura:v1',
+        enable_preprocessing: false,
+      }),
+    });
+    if (!sarvamRes.ok) {
+      const err = await sarvamRes.text();
+      console.error('[Translate] Sarvam error:', err);
+      return res.status(sarvamRes.status).json({ error: 'Translation failed', translatedText: text });
+    }
+    const data = await sarvamRes.json();
+    res.json({ translatedText: data.translated_text || text });
+  } catch (err) {
+    console.error('[Translate] Error:', err.message);
+    res.status(500).json({ error: 'Translation failed', translatedText: req.body?.text || '' });
+  }
+});
 
 // Root route — confirms the server is up (Render / browser check)
 app.get('/', (_req, res) => res.json({
