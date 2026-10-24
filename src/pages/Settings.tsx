@@ -20,12 +20,13 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { usePreferences } from "@/contexts/PreferencesContext";
+import { useAuth } from "@/contexts/AuthContext";
 import api from "@/lib/api";
-
-
 
 export default function Settings() {
   const { name, businessName, phone, language, setName, setBusinessName, setPhone, setLanguage } = usePreferences();
+  // email always comes from the server-verified user object, never localStorage
+  const { user } = useAuth();
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -38,10 +39,14 @@ export default function Settings() {
 
   useEffect(() => {
     setSettings({
-      name: name || "",
-      businessName: businessName || "",
-      phone: phone || "",
-      language: language || "en",
+      // Profile fields — prefer AuthContext.user (server-authoritative) for name/business/phone
+      // when they haven't been overridden locally yet; fall back to PreferencesContext.
+      name:         user?.name         || name         || "",
+      businessName: user?.businessName || businessName || "",
+      phone:        user?.phone        || phone        || "",
+      // email is only in AuthContext.user — PreferencesContext doesn't store it
+      email:        user?.email        || "",
+      language:     language           || "en",
       voiceNotifications: true,
       voiceAccuracy: "balanced",
       autoRecord: false,
@@ -54,7 +59,7 @@ export default function Settings() {
       locationAccess: false,
     });
     setLoading(false);
-  }, [name, businessName, phone, language]);
+  }, [user, name, businessName, phone, language]);
 
   const handleSaveProfile = async () => {
     try {
@@ -79,7 +84,9 @@ export default function Settings() {
 
   const handleSaveSettings = async () => {
     try {
-      const token = localStorage.getItem('token');
+      // Use the correct token key — api already has the Authorization header set
+      // by AuthContext, but we pass it explicitly as a fallback safety measure.
+      const token = localStorage.getItem('trackify_token');
       await api.put(`/api/user/settings`, {
         voiceNotifications: settings.voiceNotifications,
         voiceAccuracy: settings.voiceAccuracy,
@@ -91,9 +98,7 @@ export default function Settings() {
         dataSync: settings.dataSync,
         analyticsSharing: settings.analyticsSharing,
         locationAccess: settings.locationAccess,
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      }, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
       toast({
         title: "Settings Saved",
         description: "Your preferences have been updated successfully.",

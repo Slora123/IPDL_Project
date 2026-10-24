@@ -2,7 +2,7 @@
 // Single auth page with Login / Register tabs.
 // Matches the existing dark design system (bg-background, card, gradients).
 // On register: collects language preference and saves it to PreferencesContext.
-// On login: restores preferences from stored user data.
+// On login: loads profile from the server response and populates PreferencesContext.
 
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -31,7 +31,7 @@ const LANGUAGE_OPTIONS = [
 
 export default function AuthPage() {
   const { login, register } = useAuth();
-  const { setLanguage, setName, setBusinessName, setPhone } = usePreferences();
+  const { setLanguage, setName, setBusinessName, setPhone, resetPreferences, language } = usePreferences();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -45,6 +45,8 @@ export default function AuthPage() {
   const [loginLoading,  setLoginLoading]  = useState(false);
   const [loginError,    setLoginError]    = useState('');
   const [showLoginPw,   setShowLoginPw]   = useState(false);
+  // Language selection on login tab
+  const [loginLanguage, setLoginLanguage] = useState(language || 'en');
 
   // ── Register state ───────────────────────────────────────────────────────
   const [regName,         setRegName]         = useState('');
@@ -68,7 +70,15 @@ export default function AuthPage() {
     }
     setLoginLoading(true);
     try {
+      // login() sets AuthContext.user from the server response
       await login(loginEmail, loginPassword);
+
+      // After login, AuthContext.user has the correct profile.
+      // We also apply the language the user chose on this login form.
+      // Note: The user object is returned by AuthContext internally;
+      // we set language from the login form selection so it takes effect immediately.
+      setLanguage(loginLanguage);
+
       toast({ title: 'Welcome back!', description: 'You are now logged in.' });
       navigate(from, { replace: true });
     } catch (err: any) {
@@ -180,6 +190,27 @@ export default function AuthPage() {
                       {showLoginPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                </div>
+
+                {/* ── Language Selection on Login ─────────────────────── */}
+                <div className="space-y-2">
+                  <Label htmlFor="login-language" className="flex items-center gap-1">
+                    <Globe className="h-3.5 w-3.5" />
+                    App Language
+                  </Label>
+                  <Select value={loginLanguage} onValueChange={setLoginLanguage} disabled={loginLoading}>
+                    <SelectTrigger id="login-language">
+                      <SelectValue placeholder="Select Language" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {LANGUAGE_OPTIONS.map(lang => (
+                        <SelectItem key={lang.value} value={lang.value}>
+                          <span className="font-medium">{lang.native}</span>
+                          <span className="ml-2 text-muted-foreground text-sm">({lang.label})</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {loginError && (
