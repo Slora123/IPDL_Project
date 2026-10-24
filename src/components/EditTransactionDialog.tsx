@@ -18,6 +18,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface Transaction {
     id: string;
@@ -42,6 +43,7 @@ export function EditTransactionDialog({
     onSuccess,
     transaction,
 }: EditTransactionDialogProps) {
+    const { t, tCategory } = useI18n();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         item: "",
@@ -102,18 +104,18 @@ export function EditTransactionDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px] bg-white text-slate-900 border-slate-200 shadow-xl">
                 <DialogHeader>
-                    <DialogTitle>Edit Transaction</DialogTitle>
+                    <DialogTitle>{t('edit_title', 'dialogs', 'Edit Transaction')}</DialogTitle>
                     <DialogDescription>
-                        Update the details of your transaction below.
+                        {t('edit_desc', 'dialogs', 'Update the details of your transaction below.')}
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
                     <div className="grid gap-2">
-                        <Label htmlFor="item">Item Name</Label>
+                        <Label htmlFor="item">{t('item_label', 'dialogs', 'Item Name')}</Label>
                         <Input
                             id="item"
                             required
-                            placeholder="e.g. Milk, Salary, Rent"
+                            placeholder={t('item_placeholder', 'dialogs', 'e.g. Milk, Salary, Rent')}
                             value={formData.item}
                             onChange={(e) =>
                                 setFormData({ ...formData, item: e.target.value })
@@ -122,7 +124,7 @@ export function EditTransactionDialog({
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="amount">Amount (₹)</Label>
+                        <Label htmlFor="amount">{t('amount_label', 'dialogs', 'Amount (₹)')}</Label>
                         <Input
                             id="amount"
                             type="number"
@@ -137,7 +139,7 @@ export function EditTransactionDialog({
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="type">Type</Label>
+                        <Label htmlFor="type">{t('type_label', 'dialogs', 'Type')}</Label>
                         <Select
                             value={formData.type}
                             onValueChange={(value) =>
@@ -148,14 +150,14 @@ export function EditTransactionDialog({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="income">Income</SelectItem>
-                                <SelectItem value="expense">Expense</SelectItem>
+                                <SelectItem value="income">{t('income', 'common', 'Income')}</SelectItem>
+                                <SelectItem value="expense">{t('expense', 'common', 'Expense')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="category">Category</Label>
+                        <Label htmlFor="category">{t('category_label', 'dialogs', 'Category')}</Label>
                         <Select
                             value={formData.category}
                             onValueChange={(value) =>
@@ -166,19 +168,19 @@ export function EditTransactionDialog({
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="General">General</SelectItem>
-                                <SelectItem value="Food">Food</SelectItem>
-                                <SelectItem value="Transport">Transport</SelectItem>
-                                <SelectItem value="Shopping">Shopping</SelectItem>
-                                <SelectItem value="Bills">Bills</SelectItem>
-                                <SelectItem value="Salary">Salary</SelectItem>
-                                <SelectItem value="Other">Other</SelectItem>
+                                <SelectItem value="General">{tCategory('General')}</SelectItem>
+                                <SelectItem value="Food">{tCategory('Food')}</SelectItem>
+                                <SelectItem value="Transport">{tCategory('Transport')}</SelectItem>
+                                <SelectItem value="Shopping">{tCategory('Shopping')}</SelectItem>
+                                <SelectItem value="Bills">{tCategory('Bills')}</SelectItem>
+                                <SelectItem value="Salary">{tCategory('Salary')}</SelectItem>
+                                <SelectItem value="Other">{tCategory('Other')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
 
                     <div className="grid gap-2">
-                        <Label htmlFor="date">Date</Label>
+                        <Label htmlFor="date">{t('date_label', 'dialogs', 'Date')}</Label>
                         <Input
                             id="date"
                             type="date"
@@ -197,10 +199,10 @@ export function EditTransactionDialog({
                             onClick={() => onOpenChange(false)}
                             disabled={loading}
                         >
-                            Cancel
+                            {t('button_cancel', 'dialogs', 'Cancel')}
                         </Button>
                         <Button type="submit" disabled={loading}>
-                            {loading ? "Saving..." : "Save Changes"}
+                            {loading ? t('saving', 'common', 'Saving...') : t('button_update', 'dialogs', 'Save Changes')}
                         </Button>
                     </DialogFooter>
                 </form>

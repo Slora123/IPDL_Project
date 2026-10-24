@@ -21,10 +21,12 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { usePreferences } from "@/contexts/PreferencesContext";
 import { useAuth } from "@/contexts/AuthContext";
+import { useI18n } from "@/contexts/I18nContext";
 import api from "@/lib/api";
 
 export default function Settings() {
   const { name, businessName, phone, language, setName, setBusinessName, setPhone, setLanguage } = usePreferences();
+  const { t } = useI18n();
   // email always comes from the server-verified user object, never localStorage
   const { user } = useAuth();
   const [settings, setSettings] = useState<any>(null);
@@ -61,6 +63,11 @@ export default function Settings() {
     setLoading(false);
   }, [user, name, businessName, phone, language]);
 
+  const handleLanguageChange = (newLang: string) => {
+    setSettings((prev: any) => ({ ...prev, language: newLang }));
+    setLanguage(newLang);
+  };
+
   const handleSaveProfile = async () => {
     try {
       setName(settings.name);
@@ -69,13 +76,13 @@ export default function Settings() {
       setLanguage(settings.language);
       
       toast({
-        title: "Profile Saved",
-        description: "Your profile has been updated successfully.",
+        title: t('profile_saved', 'settings', 'Profile Saved'),
+        description: t('profile_saved_desc', 'settings', 'Your profile has been updated successfully.'),
       });
     } catch (error) {
       console.error('Error saving profile:', error);
       toast({
-        title: "Error",
+        title: t('error', 'common', 'Error'),
         description: "Failed to save profile",
         variant: "destructive",
       });
@@ -100,13 +107,13 @@ export default function Settings() {
         locationAccess: settings.locationAccess,
       }, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
       toast({
-        title: "Settings Saved",
-        description: "Your preferences have been updated successfully.",
+        title: t('settings_saved', 'settings', 'Settings Saved'),
+        description: t('settings_saved_desc', 'settings', 'Your preferences have been updated successfully.'),
       });
     } catch (error) {
       console.error('Error saving settings:', error);
       toast({
-        title: "Error",
+        title: t('error', 'common', 'Error'),
         description: "Failed to save settings",
         variant: "destructive",
       });
@@ -128,31 +135,31 @@ export default function Settings() {
   };
 
   if (loading || !settings) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">{t('loading', 'common', 'Loading...')}</div>;
   }
 
   return (
     <div className="w-full max-w-7xl mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Settings</h1>
+          <h1 className="text-3xl font-bold">{t('header_title', 'settings', 'Settings & Preferences')}</h1>
           <p className="text-muted-foreground">
-            Customize your VoicePay experience
+            {t('header_desc', 'settings', 'Manage your profile, language, notification preferences, and business data')}
           </p>
         </div>
         <Button onClick={handleSaveSettings} className="bg-gradient-success">
           <Save className="mr-2 h-4 w-4" />
-          Save Changes
+          {t('save', 'common', 'Save Changes')}
         </Button>
       </div>
 
       <Tabs defaultValue="profile" className="space-y-4">
         <TabsList className="flex flex-wrap h-auto w-full sm:grid sm:grid-cols-5 gap-1 sm:gap-0">
-          <TabsTrigger value="profile" className="flex-1 text-xs sm:text-sm">Profile</TabsTrigger>
-          <TabsTrigger value="voice" className="flex-1 text-xs sm:text-sm">Voice</TabsTrigger>
-          <TabsTrigger value="notifications" className="flex-1 text-xs sm:text-sm">Notifications</TabsTrigger>
-          <TabsTrigger value="privacy" className="flex-1 text-xs sm:text-sm">Privacy</TabsTrigger>
-          <TabsTrigger value="data" className="flex-1 text-xs sm:text-sm">Data</TabsTrigger>
+          <TabsTrigger value="profile" className="flex-1 text-xs sm:text-sm">{t('tab_profile', 'settings', 'Profile')}</TabsTrigger>
+          <TabsTrigger value="voice" className="flex-1 text-xs sm:text-sm">{t('tab_voice', 'settings', 'Voice')}</TabsTrigger>
+          <TabsTrigger value="notifications" className="flex-1 text-xs sm:text-sm">{t('tab_notifications', 'settings', 'Notifications')}</TabsTrigger>
+          <TabsTrigger value="privacy" className="flex-1 text-xs sm:text-sm">{t('tab_data', 'settings', 'Privacy')}</TabsTrigger>
+          <TabsTrigger value="data" className="flex-1 text-xs sm:text-sm">{t('data_title', 'settings', 'Data')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="profile" className="space-y-4">
@@ -160,14 +167,14 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
-                Personal Information
+                {t('tab_profile', 'settings', 'Profile')}
               </CardTitle>
-              <CardDescription>Update your personal and business details</CardDescription>
+              <CardDescription>{t('header_desc', 'settings', 'Update your personal and business details')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
+                  <Label htmlFor="name">{t('name', 'settings', 'Name')}</Label>
                   <Input
                     id="name"
                     value={settings.name || ''}
@@ -177,7 +184,7 @@ export default function Settings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="businessName">Business Name</Label>
+                <Label htmlFor="businessName">{t('business_name', 'settings', 'Business Name')}</Label>
                 <Input
                   id="businessName"
                   value={settings.businessName || ''}
@@ -187,7 +194,7 @@ export default function Settings() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="email">{t('email', 'settings', 'Email Address')}</Label>
                   <Input
                     id="email"
                     type="email"
@@ -196,7 +203,7 @@ export default function Settings() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone">{t('phone', 'settings', 'Phone Number')}</Label>
                   <Input
                     id="phone"
                     value={settings.phone || ''}
@@ -206,11 +213,11 @@ export default function Settings() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="language">Primary Language</Label>
+                <Label htmlFor="language">{t('primary_language', 'settings', 'Primary Language')}</Label>
                 <select
                   id="language"
                   value={settings.language || "en"}
-                  onChange={(e) => setSettings({ ...settings, language: e.target.value })}
+                  onChange={(e) => handleLanguageChange(e.target.value)}
                   className="w-full px-3 py-2 border border-input rounded-md bg-background"
                 >
                   {languages.map((lang) => (
@@ -222,7 +229,7 @@ export default function Settings() {
               </div>
 
               <Button onClick={handleSaveProfile} className="mt-4">
-                Save Profile
+                {t('save_profile', 'settings', 'Save Profile')}
               </Button>
             </CardContent>
           </Card>
@@ -233,16 +240,16 @@ export default function Settings() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Mic className="h-5 w-5" />
-                Voice Recognition Settings
+                {t('voice_settings_title', 'settings', 'Voice Recognition Settings')}
               </CardTitle>
-              <CardDescription>Configure voice input and accuracy preferences</CardDescription>
+              <CardDescription>{t('voice_settings_desc', 'settings', 'Configure voice input and accuracy preferences')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-0.5">
-                  <Label>Voice Notifications</Label>
+                  <Label>{t('voice_notifications', 'settings', 'Voice Notifications')}</Label>
                   <p className="text-sm text-muted-foreground">
-                    Hear audio confirmations for transactions
+                    {t('voice_notifications_desc', 'settings', 'Hear audio confirmations for transactions')}
                   </p>
                 </div>
                 <Switch

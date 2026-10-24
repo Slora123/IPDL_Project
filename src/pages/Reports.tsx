@@ -14,20 +14,20 @@ import {
 } from "lucide-react";
 import api from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/contexts/I18nContext";
 // @ts-ignore
 import html2pdf from "html2pdf.js";
 
-
-
 export default function Reports() {
+  const { t, tCategory } = useI18n();
   const [loading, setLoading] = useState<string | null>(null);
   const [generatedReport, setGeneratedReport] = useState<any>(null);
   const { toast } = useToast();
 
   const quickReports = [
-    { id: "today-summary", name: "Today's Summary", icon: Calendar, description: "Quick overview of today's transactions" },
-    { id: "weekly-pl", name: "Weekly P&L", icon: TrendingUp, description: "7-day profit and loss summary" },
-    { id: "category-breakdown", name: "Category Breakdown", icon: PieChart, description: "Current month category analysis" },
+    { id: "today-summary", name: t("todays_summary", "reports", "Today's Summary"), icon: Calendar, description: "Quick overview of today's transactions" },
+    { id: "weekly-pl", name: t("weekly_pl", "reports", "Weekly P&L"), icon: TrendingUp, description: "7-day profit and loss summary" },
+    { id: "category-breakdown", name: t("category_report", "reports", "Category Breakdown"), icon: PieChart, description: "Current month category analysis" },
     { id: "voice-accuracy", name: "Voice Accuracy", icon: BarChart3, description: "Voice recognition accuracy report" }
   ];
 
@@ -75,16 +75,16 @@ export default function Reports() {
     <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Reports & Analytics</h1>
+          <h1 className="text-3xl font-bold">{t('title', 'reports', 'Reports & Analytics')}</h1>
           <p className="text-muted-foreground">
-            Generate and download comprehensive business reports
+            {t('subtitle', 'reports', 'Generate and download comprehensive business reports')}
           </p>
         </div>
         <div className="flex gap-2">
           {generatedReport && (
             <Button size="sm" onClick={downloadReport}>
               <Download className="mr-2 h-4 w-4" />
-              Download Report
+              {t('download_pdf', 'reports', 'Download Report')}
             </Button>
           )}
         </div>
@@ -92,7 +92,7 @@ export default function Reports() {
 
       {/* Quick Reports */}
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Quick Reports</h2>
+        <h2 className="text-xl font-semibold">{t('quick_reports', 'reports', 'Quick Reports')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {quickReports.map((report) => (
             <Card key={report.id} className="shadow-card hover:shadow-lg transition-all cursor-pointer group">
@@ -112,10 +112,10 @@ export default function Reports() {
                   {loading === report.id ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating...
+                      {t('generating', 'reports', 'Generating...')}
                     </>
                   ) : (
-                    "Generate"
+                    t('continue', 'common', 'Generate')
                   )}
                 </Button>
               </CardContent>
@@ -131,7 +131,7 @@ export default function Reports() {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <span>{generatedReport.reportName}</span>
-                <Badge className="bg-success text-success-foreground">Ready</Badge>
+                <Badge className="bg-success text-success-foreground">{t('done', 'common', 'Ready')}</Badge>
               </CardTitle>
               <CardDescription>
                 {generatedReport.period || generatedReport.date || "Generated just now"}
@@ -153,25 +153,25 @@ export default function Reports() {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {generatedReport.totalIncome !== undefined && (
                   <div className="text-center p-3 bg-success/10 rounded-lg">
-                    <p className="text-sm text-muted-foreground">Total Income</p>
+                    <p className="text-sm text-muted-foreground">{t('todays_income', 'dashboard', 'Total Income')}</p>
                     <p className="text-2xl font-bold text-success">₹{generatedReport.totalIncome.toLocaleString()}</p>
                   </div>
                 )}
                 {generatedReport.totalExpenses !== undefined && (
                   <div className="text-center p-3 bg-destructive/10 rounded-lg">
-                    <p className="text-sm text-muted-foreground">Total Expenses</p>
+                    <p className="text-sm text-muted-foreground">{t('todays_expenses', 'dashboard', 'Total Expenses')}</p>
                     <p className="text-2xl font-bold text-destructive">₹{generatedReport.totalExpenses.toLocaleString()}</p>
                   </div>
                 )}
                 {generatedReport.netProfit !== undefined && (
                   <div className="text-center p-3 bg-primary/10 rounded-lg">
-                    <p className="text-sm text-muted-foreground">Net Profit</p>
+                    <p className="text-sm text-muted-foreground">{t('net_profit', 'dashboard', 'Net Profit')}</p>
                     <p className="text-2xl font-bold">₹{generatedReport.netProfit.toLocaleString()}</p>
                   </div>
                 )}
                 {generatedReport.totalTransactions !== undefined && (
                   <div className="text-center p-3 bg-muted rounded-lg">
-                    <p className="text-sm text-muted-foreground">Transactions</p>
+                    <p className="text-sm text-muted-foreground">{t('transactions', 'dashboard', 'Transactions')}</p>
                     <p className="text-2xl font-bold">{generatedReport.totalTransactions}</p>
                   </div>
                 )}
@@ -179,50 +179,50 @@ export default function Reports() {
 
               {/* Detailed Data Tables */}
               <div className="mt-6">
-                <h3 className="text-lg font-semibold mb-3">Detailed Breakdown</h3>
+                <h3 className="text-lg font-semibold mb-3">{t('category_breakdown', 'dashboard', 'Detailed Breakdown')}</h3>
                 <div className="overflow-x-auto rounded-lg border">
                   <table className="w-full text-xs sm:text-sm text-left">
                     <thead className="bg-muted/50 text-muted-foreground">
                       {generatedReport.transactions && (
                         <tr>
-                          <th className="px-1.5 py-2 sm:p-3 font-medium">Time</th>
-                          <th className="px-1.5 py-2 sm:p-3 font-medium">Item</th>
-                          <th className="px-1.5 py-2 sm:p-3 font-medium">Category</th>
-                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Amount</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium">{t('time', 'common', 'Time')}</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium">{t('item', 'scan', 'Item')}</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium">{t('category', 'common', 'Category')}</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">{t('amount', 'common', 'Amount')}</th>
                         </tr>
                       )}
                       {generatedReport.dailyBreakdown && (
                         <tr>
-                          <th className="px-1.5 py-2 sm:p-3 font-medium">Date</th>
-                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Income</th>
-                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Expenses</th>
-                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Profit</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium">{t('date', 'common', 'Date')}</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">{t('income', 'common', 'Income')}</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">{t('expense', 'common', 'Expenses')}</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">{t('net_profit', 'dashboard', 'Profit')}</th>
                         </tr>
                       )}
                       {generatedReport.categories && (
                         <tr>
-                          <th className="px-1.5 py-2 sm:p-3 font-medium">Category</th>
-                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Income</th>
-                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Expenses</th>
-                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Net Amount</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium">{t('category', 'common', 'Category')}</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">{t('income', 'common', 'Income')}</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">{t('expense', 'common', 'Expenses')}</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">{t('total', 'common', 'Net Amount')}</th>
                         </tr>
                       )}
                       {generatedReport.languageBreakdown && (
                         <tr>
-                          <th className="px-1.5 py-2 sm:p-3 font-medium">Language</th>
-                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Count</th>
-                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">Percentage</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium">{t('language', 'common', 'Language')}</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">{t('subtotal', 'common', 'Count')}</th>
+                          <th className="px-1.5 py-2 sm:p-3 font-medium text-right">%</th>
                         </tr>
                       )}
                     </thead>
                     <tbody className="divide-y">
-                      {generatedReport.transactions?.map((t: any, i: number) => (
+                      {generatedReport.transactions?.map((tr: any, i: number) => (
                         <tr key={i} className="bg-card">
-                          <td className="px-1.5 py-2 sm:p-3">{t.time}</td>
-                          <td className="px-1.5 py-2 sm:p-3">{t.item}</td>
-                          <td className="px-1.5 py-2 sm:p-3">{t.category}</td>
-                          <td className={`px-1.5 py-2 sm:p-3 text-right font-medium ${t.type === 'income' ? 'text-success' : 'text-destructive'}`}>
-                            {t.type === 'income' ? '+' : '-'}₹{t.amount}
+                          <td className="px-1.5 py-2 sm:p-3">{tr.time}</td>
+                          <td className="px-1.5 py-2 sm:p-3">{tr.item}</td>
+                          <td className="px-1.5 py-2 sm:p-3">{tCategory(tr.category)}</td>
+                          <td className={`px-1.5 py-2 sm:p-3 text-right font-medium ${tr.type === 'income' ? 'text-success' : 'text-destructive'}`}>
+                            {tr.type === 'income' ? '+' : '-'}₹{tr.amount}
                           </td>
                         </tr>
                       ))}
@@ -238,7 +238,7 @@ export default function Reports() {
                       ))}
                       {generatedReport.categories?.map((c: any, i: number) => (
                         <tr key={i} className="bg-card">
-                          <td className="px-1.5 py-2 sm:p-3 font-medium">{c.category}</td>
+                          <td className="px-1.5 py-2 sm:p-3 font-medium">{tCategory(c.category)}</td>
                           <td className="px-1.5 py-2 sm:p-3 text-right text-success">₹{c.totalIncome || 0}</td>
                           <td className="px-1.5 py-2 sm:p-3 text-right text-destructive">₹{c.totalExpenses || 0}</td>
                           <td className={`px-1.5 py-2 sm:p-3 text-right font-medium ${(c.netAmount || 0) >= 0 ? 'text-success' : 'text-destructive'}`}>
@@ -257,7 +257,7 @@ export default function Reports() {
                   </table>
                   {(!generatedReport.transactions && !generatedReport.dailyBreakdown && !generatedReport.categories && !generatedReport.languageBreakdown) && (
                     <div className="p-8 text-center text-muted-foreground">
-                      No detailed data available for this report.
+                      {t('no_expense_data', 'spending', 'No detailed data available for this report.')}
                     </div>
                   )}
                 </div>
@@ -272,9 +272,9 @@ export default function Reports() {
         <Card className="shadow-card">
           <CardContent className="p-12 text-center">
             <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No Reports Generated Yet</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('reports', 'common', 'No Reports Generated Yet')}</h3>
             <p className="text-muted-foreground">
-              Click "Generate" on any quick report above to create your first report
+              {t('subtitle', 'reports', 'Generate and download comprehensive business reports')}
             </p>
           </CardContent>
         </Card>

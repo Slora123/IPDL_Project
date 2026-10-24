@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Bell, Calendar, Clock, Plus, X } from "lucide-react";
 import api from "@/lib/api";
-
-
+import { useI18n } from "@/contexts/I18nContext";
 
 interface Loan {
   id: string;
@@ -18,6 +17,7 @@ interface Loan {
 }
 
 export default function LoanAlert() {
+  const { t } = useI18n();
   const [loans, setLoans] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -76,29 +76,29 @@ export default function LoanAlert() {
   };
 
   if (loading) {
-    return <div className="p-6">Loading...</div>;
+    return <div className="p-6">{t("loading", "common", "Loading...")}</div>;
   }
 
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Loan Alerts</h1>
+        <h1 className="text-2xl font-bold">{t("loan_alerts", "loans", "Loan Alerts")}</h1>
         <Button variant="outline" onClick={() => setShowAddForm(!showAddForm)}>
           {showAddForm ? <X className="h-4 w-4 mr-2" /> : <Plus className="h-4 w-4 mr-2" />}
-          {showAddForm ? "Cancel" : "Add Loan"}
+          {showAddForm ? t("cancel", "common", "Cancel") : t("add_loan", "loans", "Add Loan")}
         </Button>
       </div>
 
       {showAddForm && (
         <Card>
           <CardHeader>
-            <CardTitle>Add New Loan</CardTitle>
+            <CardTitle>{t("add_new_loan", "loans", "Add New Loan")}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleAddLoan} className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="lender">Lender</Label>
+                  <Label htmlFor="lender">{t("lender", "loans", "Lender")}</Label>
                   <Input
                     id="lender"
                     value={newLoan.lender}
@@ -107,7 +107,7 @@ export default function LoanAlert() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="amount">Amount (₹)</Label>
+                  <Label htmlFor="amount">{t("amount", "loans", "Amount (₹)")}</Label>
                   <Input
                     id="amount"
                     type="number"
@@ -117,7 +117,7 @@ export default function LoanAlert() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="dueDate">Due Date</Label>
+                  <Label htmlFor="dueDate">{t("due_date", "loans", "Due Date")}</Label>
                   <Input
                     id="dueDate"
                     type="date"
@@ -127,7 +127,7 @@ export default function LoanAlert() {
                   />
                 </div>
               </div>
-              <Button type="submit">Add Loan</Button>
+              <Button type="submit">{t("add_loan", "loans", "Add Loan")}</Button>
             </form>
           </CardContent>
         </Card>
@@ -135,11 +135,11 @@ export default function LoanAlert() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Pending Loans</CardTitle>
+          <CardTitle>{t("pending_loans", "loans", "Pending Loans")}</CardTitle>
         </CardHeader>
         <CardContent>
           {loans.length === 0 ? (
-            <p className="text-muted-foreground text-center py-4">No loans added yet</p>
+            <p className="text-muted-foreground text-center py-4">{t("no_loans_yet", "loans", "No loans added yet")}</p>
           ) : (
             <div className="space-y-3">
               {loans.map((loan) => (
@@ -147,7 +147,7 @@ export default function LoanAlert() {
                   <div>
                     <p className="font-medium">{loan.lender}</p>
                     <p className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Calendar className="h-4 w-4" /> Due: {loan.dueDate}
+                      <Calendar className="h-4 w-4" /> {t("due", "loans", "Due")}: {loan.dueDate}
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
@@ -155,7 +155,7 @@ export default function LoanAlert() {
                       <p className="font-semibold">₹{loan.amount.toLocaleString()}</p>
                       <p className="text-xs text-muted-foreground flex items-center justify-end gap-1">
                         <Clock className="h-3 w-3" />
-                        {loan.reminderEnabled ? "Reminder on" : "Reminder off"}
+                        {loan.reminderEnabled ? t("reminder_on", "loans", "Reminder on") : t("reminder_off", "loans", "Reminder off")}
                       </p>
                     </div>
                     <div className="flex flex-col gap-2">

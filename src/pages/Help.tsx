@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { usePreferences } from "@/contexts/PreferencesContext";
+import { useI18n } from "@/contexts/I18nContext";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { 
   Search, 
@@ -28,6 +29,7 @@ export default function Help() {
   const [supportMessage, setSupportMessage] = useState("");
   const { toast } = useToast();
   const { language } = usePreferences();
+  const { t } = useI18n();
   const isEnglish = language === 'en';
 
   const faqData = [
@@ -182,19 +184,19 @@ export default function Help() {
     <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Help & Support</h1>
+          <h1 className="text-3xl font-bold">{t('title', 'help', 'Help & Support')}</h1>
           <p className="text-muted-foreground">
-            {isEnglish ? "Get help with VoicePay features and troubleshooting" : "सहायता और समर्थन - VoicePay सुविधाओं और समस्या निवारण में सहायता प्राप्त करें"}
+            {t('subtitle', 'help', 'Need assistance with VoicePay? Find answers or contact support')}
           </p>
         </div>
       </div>
 
       <Tabs defaultValue="faq" className="space-y-4">
         <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto gap-2 p-1">
-          <TabsTrigger value="faq">FAQ</TabsTrigger>
-          <TabsTrigger value="contact">Contact Support</TabsTrigger>
-          <TabsTrigger value="tutorials">Tutorials</TabsTrigger>
-          <TabsTrigger value="status">System Status</TabsTrigger>
+          <TabsTrigger value="faq">{t('faq', 'help', 'FAQ')}</TabsTrigger>
+          <TabsTrigger value="contact">{t('contact_support', 'help', 'Contact Support')}</TabsTrigger>
+          <TabsTrigger value="tutorials">{t('learn_grow', 'common', 'Tutorials')}</TabsTrigger>
+          <TabsTrigger value="status">{t('status', 'common', 'System Status')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="faq" className="space-y-4">
@@ -204,7 +206,7 @@ export default function Help() {
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder={isEnglish ? "Search FAQs..." : "FAQ खोजें..."}
+                  placeholder={t('search_placeholder', 'transactions', 'Search FAQs...')}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"

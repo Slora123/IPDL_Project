@@ -18,11 +18,13 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/contexts/I18nContext";
 
 export function UserMenu() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { user, logout } = useAuth();
+  const { t } = useI18n();
 
   const displayName = user?.name || user?.email || "User";
   const initial = displayName.charAt(0).toUpperCase();
@@ -30,8 +32,8 @@ export function UserMenu() {
   const handleLogout = () => {
     logout();                     // clears token from localStorage + axios headers
     toast({
-      title: "Logged out",
-      description: "You have been successfully logged out.",
+      title: t("logged_out", "common"),
+      description: t("logged_out_desc", "common"),
     });
     navigate("/login", { replace: true });
   };
@@ -66,15 +68,15 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => navigate("/settings")}>
           <User className="mr-2 h-4 w-4" />
-          Profile
+          {t("profile", "common")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate("/settings")}>
           <Settings className="mr-2 h-4 w-4" />
-          Settings
+          {t("settings", "common")}
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => navigate("/help")}>
           <HelpCircle className="mr-2 h-4 w-4" />
-          Help &amp; Support
+          {t("help_support", "common")}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem
@@ -82,7 +84,7 @@ export function UserMenu() {
           className="text-destructive focus:text-destructive focus:bg-destructive/10"
         >
           <LogOut className="mr-2 h-4 w-4" />
-          Log out
+          {t("logout", "common")}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

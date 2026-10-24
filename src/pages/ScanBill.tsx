@@ -4,9 +4,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Camera, Upload, Loader2, CheckCircle, Receipt, AlertCircle, Edit2, ShoppingCart, TrendingUp } from "lucide-react";
+import { Camera, Upload, Loader2, CheckCircle, Receipt, AlertCircle, Edit2, ShoppingCart, TrendingUp, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface BillItem {
   name: string;
@@ -27,6 +28,11 @@ interface ScannedBill {
 }
 
 type ScanStage = "idle" | "uploading" | "analyzing" | "done" | "error";
+
+const getTodayDateStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
 
 function apiErrorMessage(error: any, fallback: string): string {
   if (error?.response?.data?.error) {
@@ -54,6 +60,7 @@ const INCOME_CATEGORIES = [
 ];
 
 export default function ScanBill() {
+  const { t, tCategory } = useI18n();
   const [scanStage, setScanStage] = useState<ScanStage>("idle");
   const [scanResult, setScanResult] = useState<ScannedBill | null>(null);
   const [editedResult, setEditedResult] = useState<ScannedBill | null>(null);
@@ -63,10 +70,10 @@ export default function ScanBill() {
 
   // Separate saving states to prevent double-submit on either button
   const [isSavingExpense, setIsSavingExpense] = useState(false);
-  const [isSavingSale,    setIsSavingSale]    = useState(false);
+  const [isSavingIncome,  setIsSavingIncome]  = useState(false);
   const savedRef = useRef(false);  // prevents double-submit from rapid clicks
 
-  // Sale-specific editable fields
+  // Category and descriptions
   const [saleDescription, setSaleDescription] = useState("");
   const [saleCategory,    setSaleCategory]    = useState("Sales");
   const [expenseCategory, setExpenseCategory] = useState("Shopping");
@@ -75,10 +82,10 @@ export default function ScanBill() {
 
   const STAGE_LABELS: Record<ScanStage, string> = {
     idle:      "",
-    uploading: "Uploading image...",
-    analyzing: "Analyzing bill with AI...",
-    done:      "Analysis complete!",
-    error:     "Analysis failed",
+    uploading: t("uploading", "scan"),
+    analyzing: t("analyzing", "scan"),
+    done:      t("done", "scan"),
+    error:     t("failed", "scan"),
   };
 
   // ── Image resizing ──────────────────────────────────────────────────────────
@@ -144,19 +151,24 @@ export default function ScanBill() {
         return;
       }
 
-      setScanResult(response.data.transaction);
-      setEditedResult(response.data.transaction);
+      const today = getTodayDateStr();
+      const extracted = response.data.transaction;
+      const initialDate = /^\d{4}-\d{2}-\d{2}$/.test(extracted?.date || "") ? extracted.date : today;
+      const tx = { ...extracted, date: initialDate };
+
+      setScanResult(tx);
+      setEditedResult(tx);
       setImageBase64(response.data.imageBase64 || null);
       setScanStage("done");
 
       // Pre-fill sale description from bill items
-      const firstItem = response.data.transaction?.items?.[0]?.name;
-      const itemCount  = response.data.transaction?.items?.length ?? 0;
+      const firstItem = tx?.items?.[0]?.name;
+      const itemCount  = tx?.items?.length ?? 0;
       if (firstItem) {
         setSaleDescription(itemCount > 1 ? `${firstItem} + ${itemCount - 1} more` : firstItem);
       }
 
-      toast({ title: "✅ Bill Scanned!", description: "Review the extracted details below." });
+      toast({ title: "✅ Bill Scanned!", description: "Choose to record as Expense or Income below." });
     } catch (error: any) {
       setScanStage("error");
       const msg = apiErrorMessage(error, "Could not analyze the image. Please try again.");
@@ -165,9 +177,9 @@ export default function ScanBill() {
     }
   };
 
-  // ── Save as Expense ─────────────────────────────────────────────────────────
+  // ── Option 2: Save as Expense ───────────────────────────────────────────────
   const handleSaveExpense = async () => {
-    if (!editedResult || isSavingExpense || isSavingSale || savedRef.current) return;
+    if (!editedResult || isSavingExpense || isSavingIncome || savedRef.current) return;
 
     if (!editedResult.total || editedResult.total <= 0) {
       toast({ title: "Invalid Total", description: "Please enter a valid total amount.", variant: "destructive" });
@@ -177,14 +189,19 @@ export default function ScanBill() {
     savedRef.current = true;
     setIsSavingExpense(true);
     try {
-      await api.post("/api/bills/confirm", {
-        transaction: { ...editedResult, category: expenseCategory },
+      const finalDate = editedResult.date || getTodayDateStr();
+      const response = await api.post("/api/bills/confirm", {
+        transaction: {
+          ...editedResult,
+          category: expenseCategory,
+          date: finalDate,
+        },
         imageBase64,
       });
-      window.dispatchEvent(new CustomEvent('trackify:transaction-saved'));
+      window.dispatchEvent(new CustomEvent('trackify:transaction-saved', { detail: response.data?.transaction }));
       toast({
         title: "✅ Expense Saved!",
-        description: `₹${editedResult.total.toFixed(2)} expense from ${editedResult.vendorName || "Unknown Vendor"} recorded.`,
+        description: `₹${editedResult.total.toFixed(2)} expense recorded under ${expenseCategory}. Visible in Transactions, Spending & Dashboard.`,
       });
       resetForm();
     } catch (error: any) {
@@ -196,42 +213,44 @@ export default function ScanBill() {
     }
   };
 
-  // ── Save as Sale (Income) ───────────────────────────────────────────────────
-  const handleSaveSale = async () => {
-    if (!editedResult || isSavingExpense || isSavingSale || savedRef.current) return;
+  // ── Option 3: Save as Income ────────────────────────────────────────────────
+  const handleSaveIncome = async () => {
+    if (!editedResult || isSavingExpense || isSavingIncome || savedRef.current) return;
 
     if (!editedResult.total || editedResult.total <= 0) {
       toast({ title: "Invalid Total", description: "Please enter a valid total amount.", variant: "destructive" });
       return;
     }
     if (!saleDescription.trim()) {
-      toast({ title: "Description Required", description: "Please enter a description for this sale.", variant: "destructive" });
+      toast({ title: "Description Required", description: "Please enter a description for this income.", variant: "destructive" });
       return;
     }
 
     savedRef.current = true;
-    setIsSavingSale(true);
+    setIsSavingIncome(true);
     try {
-      await api.post("/api/bills/confirm-sale", {
+      const finalDate = editedResult.date || getTodayDateStr();
+      const response = await api.post("/api/bills/confirm-sale", {
         transaction: {
           ...editedResult,
           category: saleCategory,
           saleDescription: saleDescription.trim(),
+          date: finalDate,
         },
         imageBase64,
       });
-      window.dispatchEvent(new CustomEvent('trackify:transaction-saved'));
+      window.dispatchEvent(new CustomEvent('trackify:transaction-saved', { detail: response.data?.transaction }));
       toast({
-        title: "✅ Sale Recorded!",
-        description: `₹${editedResult.total.toFixed(2)} revenue from "${saleDescription}" added to your income.`,
+        title: "✅ Income Recorded!",
+        description: `₹${editedResult.total.toFixed(2)} income from "${saleDescription}" added to your account.`,
       });
       resetForm();
     } catch (error: any) {
       savedRef.current = false;
-      const msg = apiErrorMessage(error, "Could not save this sale. Please try again.");
+      const msg = apiErrorMessage(error, "Could not save this income. Please try again.");
       toast({ title: "Save Failed", description: msg, variant: "destructive" });
     } finally {
-      setIsSavingSale(false);
+      setIsSavingIncome(false);
     }
   };
 
@@ -253,14 +272,14 @@ export default function ScanBill() {
   const updateField = (field: keyof ScannedBill, value: any) =>
     setEditedResult(prev => prev ? { ...prev, [field]: value } : prev);
 
-  const isBusy = isSavingExpense || isSavingSale;
+  const isBusy = isSavingExpense || isSavingIncome;
 
   return (
     <div className="w-full max-w-3xl mx-auto p-4 sm:p-6 space-y-6">
       <div>
-        <h1 className="text-3xl font-bold">Scan Bill</h1>
+        <h1 className="text-3xl font-bold">{t("title", "scan")}</h1>
         <p className="text-muted-foreground">
-          Upload or scan a receipt. Record it as an expense (purchase) or as a customer sale (revenue).
+          {t("subtitle", "scan")}
         </p>
       </div>
 
@@ -283,15 +302,15 @@ export default function ScanBill() {
                 {scanStage === "uploading" || scanStage === "analyzing"
                   ? STAGE_LABELS[scanStage]
                   : scanStage === "error"
-                  ? "Scan Failed"
-                  : "Upload a receipt"}
+                  ? t("failed", "scan")
+                  : t("upload_receipt", "scan")}
               </h3>
               <p className="text-sm text-muted-foreground max-w-xs">
                 {scanStage === "uploading" || scanStage === "analyzing"
-                  ? "Please wait while AI extracts details from your bill..."
+                  ? t("analyzing", "scan")
                   : scanStage === "error"
                   ? errorMessage
-                  : "Take a picture or upload an image. Then save it as an expense or as a customer sale."}
+                  : t("upload_desc", "scan")}
               </p>
             </div>
 
@@ -299,7 +318,7 @@ export default function ScanBill() {
               <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
                 <Button asChild className="bg-gradient-primary cursor-pointer">
                   <label>
-                    <Camera className="mr-2 h-4 w-4" /> Use Camera
+                    <Camera className="mr-2 h-4 w-4" /> {t("use_camera", "scan")}
                     <input
                       type="file" accept="image/*" capture="environment"
                       className="hidden"
@@ -310,7 +329,7 @@ export default function ScanBill() {
                 </Button>
                 <Button asChild variant="outline" className="cursor-pointer">
                   <label>
-                    <Upload className="mr-2 h-4 w-4" /> Upload File
+                    <Upload className="mr-2 h-4 w-4" /> {t("upload_file", "scan")}
                     <input
                       type="file" accept="image/*"
                       className="hidden"
@@ -331,7 +350,7 @@ export default function ScanBill() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2 text-xl">
                   <CheckCircle className="h-5 w-5 text-green-500" />
-                  Receipt Details
+                  {t("receipt_details", "scan")}
                 </CardTitle>
                 <Button
                   size="sm" variant="ghost"
@@ -340,35 +359,66 @@ export default function ScanBill() {
                   disabled={isBusy}
                 >
                   <Edit2 className="h-3 w-3" />
-                  {isEditing ? "Done Editing" : "Edit"}
+                  {isEditing ? t("done", "common") : t("edit", "common")}
                 </Button>
               </div>
-              <CardDescription>
-                {editedResult.vendorName || "Unknown Vendor"} • {editedResult.date || "Unknown Date"}
+              <CardDescription className="flex flex-wrap items-center justify-between gap-2">
+                <span>{editedResult.vendorName || t("unknown_vendor", "scan")}</span>
+                <span className="text-xs font-mono bg-muted px-2 py-0.5 rounded">
+                  {editedResult.invoiceNumber ? `${t("invoice_no", "scan")} ${editedResult.invoiceNumber}` : t("receipt_details", "scan")}
+                </span>
               </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-4">
+              {/* Quick Transaction Date Bar */}
+              <div className="flex flex-wrap items-center justify-between gap-2 p-2.5 bg-muted/30 rounded-lg border text-xs">
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-primary shrink-0" />
+                  <span className="font-semibold text-muted-foreground">{t("transaction_date", "scan")}</span>
+                  <Input
+                    type="date"
+                    className="h-7 w-36 text-xs px-2"
+                    value={editedResult.date || getTodayDateStr()}
+                    onChange={e => updateField("date", e.target.value)}
+                    disabled={isBusy}
+                  />
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs px-2"
+                    onClick={() => updateField("date", getTodayDateStr())}
+                    disabled={isBusy}
+                  >
+                    {t("set_today", "scan")}
+                  </Button>
+                </div>
+                <span className="text-[11px] text-muted-foreground">
+                  {t("date_tip", "scan")}
+                </span>
+              </div>
+
               {/* Editable header fields */}
               {isEditing && (
                 <div className="grid grid-cols-2 gap-3 p-3 bg-muted/40 rounded-lg">
                   <div>
-                    <Label className="text-xs">Vendor / Customer Name</Label>
+                    <Label className="text-xs">{t("vendor_name", "scan")}</Label>
                     <Input className="h-8 mt-1" value={editedResult.vendorName || ""}
                       onChange={e => updateField("vendorName", e.target.value)} />
                   </div>
                   <div>
-                    <Label className="text-xs">Date (YYYY-MM-DD)</Label>
+                    <Label className="text-xs">{t("date", "common")}</Label>
                     <Input type="date" className="h-8 mt-1" value={editedResult.date || ""}
                       onChange={e => updateField("date", e.target.value)} />
                   </div>
                   <div>
-                    <Label className="text-xs">Total Amount (₹)</Label>
+                    <Label className="text-xs">{t("total", "common")} (₹)</Label>
                     <Input type="number" className="h-8 mt-1" value={editedResult.total}
                       onChange={e => updateField("total", parseFloat(e.target.value) || 0)} />
                   </div>
                   <div>
-                    <Label className="text-xs">Tax Amount (₹)</Label>
+                    <Label className="text-xs">{t("tax", "common")} (₹)</Label>
                     <Input type="number" className="h-8 mt-1" value={editedResult.tax}
                       onChange={e => updateField("tax", parseFloat(e.target.value) || 0)} />
                   </div>
@@ -380,10 +430,10 @@ export default function ScanBill() {
                 <table className="w-full text-sm">
                   <thead className="bg-muted/50 text-muted-foreground">
                     <tr>
-                      <th className="py-2 px-4 text-left font-medium">Item</th>
-                      <th className="py-2 px-4 text-center font-medium">Qty</th>
-                      <th className="py-2 px-4 text-right font-medium">Unit Price</th>
-                      <th className="py-2 px-4 text-right font-medium">Total</th>
+                      <th className="py-2 px-4 text-left font-medium">{t("item", "scan")}</th>
+                      <th className="py-2 px-4 text-center font-medium">{t("qty", "scan")}</th>
+                      <th className="py-2 px-4 text-right font-medium">{t("unit_price", "scan")}</th>
+                      <th className="py-2 px-4 text-right font-medium">{t("total", "scan")}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -407,88 +457,83 @@ export default function ScanBill() {
               <div className="flex flex-col items-end justify-end space-y-1 pt-2">
                 {editedResult.subtotal != null && (
                   <div className="flex items-center justify-between w-full max-w-[200px] text-muted-foreground text-sm">
-                    <span>Subtotal</span>
+                    <span>{t("subtotal", "scan")}</span>
                     <span>{editedResult.currencySymbol}{editedResult.subtotal.toFixed(2)}</span>
                   </div>
                 )}
                 <div className="flex items-center justify-between w-full max-w-[200px] text-muted-foreground text-sm">
-                  <span>Tax</span>
+                  <span>{t("tax", "scan")}</span>
                   <span>{editedResult.currencySymbol}{(editedResult.tax || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between w-full max-w-[200px] font-bold text-lg pt-1 border-t">
-                  <span>Total</span>
+                  <span>{t("total", "scan")}</span>
                   <span>{editedResult.currencySymbol}{editedResult.total.toFixed(2)}</span>
                 </div>
               </div>
 
-              {/* ── Action panels: Expense vs Sale ─────────────────────── */}
+              {/* ── Action panels: Expense vs Income ───────────────────── */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
                 {/* Expense panel */}
                 <div className="rounded-lg border border-red-500/20 bg-red-500/5 p-3 space-y-2">
                   <p className="text-xs font-semibold text-red-600 dark:text-red-400 flex items-center gap-1">
-                    <ShoppingCart className="h-3 w-3" /> Record as Expense (Purchase)
+                    <ShoppingCart className="h-3 w-3" /> {t("record_as_expense", "scan")}
                   </p>
                   <div>
-                    <Label className="text-xs">Expense Category</Label>
+                    <Label className="text-xs">{t("expense_category", "scan")}</Label>
                     <Select value={expenseCategory} onValueChange={setExpenseCategory}>
                       <SelectTrigger className="h-8 mt-1 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {EXPENSE_CATEGORIES.map(c => (
-                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                          <SelectItem key={c} value={c}>{tCategory(c)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
 
-                {/* Sale panel */}
+                {/* Income / Sale panel */}
                 <div className="rounded-lg border border-green-500/20 bg-green-500/5 p-3 space-y-2">
                   <p className="text-xs font-semibold text-green-600 dark:text-green-400 flex items-center gap-1">
-                    <TrendingUp className="h-3 w-3" /> Record as Sale (Revenue)
+                    <TrendingUp className="h-3 w-3" /> {t("record_as_income", "scan")}
                   </p>
                   <div>
-                    <Label className="text-xs">Sale Description</Label>
+                    <Label className="text-xs">{t("income_description", "scan")}</Label>
                     <Input
                       className="h-8 mt-1 text-xs"
-                      placeholder="e.g. Rice 5kg sold to Ramu"
+                      placeholder={t("income_placeholder", "scan")}
                       value={saleDescription}
                       onChange={e => setSaleDescription(e.target.value)}
                       disabled={isBusy}
                     />
                   </div>
                   <div>
-                    <Label className="text-xs">Revenue Category</Label>
+                    <Label className="text-xs">{t("income_category", "scan")}</Label>
                     <Select value={saleCategory} onValueChange={setSaleCategory}>
                       <SelectTrigger className="h-8 mt-1 text-xs">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
                         {INCOME_CATEGORIES.map(c => (
-                          <SelectItem key={c} value={c}>{c}</SelectItem>
+                          <SelectItem key={c} value={c}>{tCategory(c)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                 </div>
               </div>
-
-              {isEditing && (
-                <p className="text-xs text-muted-foreground text-center">
-                  ✏️ Edit any incorrect values above before saving.
-                </p>
-              )}
             </CardContent>
 
-            {/* ── Footer: Discard + two action buttons ───────────────────── */}
+            {/* ── Footer: 3 Options (Discard, Add as Expense, Add as Income) ───────────────────── */}
             <CardFooter className="flex flex-wrap items-center justify-between gap-3 border-t p-4 bg-muted/20">
+              {/* Option 1: Discard */}
               <Button variant="ghost" onClick={handleDiscard} disabled={isBusy}>
-                Discard
+                {t("discard", "scan")}
               </Button>
 
               <div className="flex flex-wrap gap-2">
-                {/* Add to Expense */}
+                {/* Option 2: Add as Expense */}
                 <Button
                   id="save-bill-expense-btn"
                   variant="outline"
@@ -497,23 +542,23 @@ export default function ScanBill() {
                   className="border-red-500/40 text-red-600 dark:text-red-400 hover:bg-red-500/10"
                 >
                   {isSavingExpense ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />Saving…</>
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />{t("saving_expense", "scan")}</>
                   ) : (
-                    <><ShoppingCart className="h-4 w-4 mr-2" />Add to Expense</>
+                    <><ShoppingCart className="h-4 w-4 mr-2" />{t("add_as_expense", "scan")}</>
                   )}
                 </Button>
 
-                {/* Add to Transaction (Sale / Income) */}
+                {/* Option 3: Add as Income */}
                 <Button
-                  id="save-bill-sale-btn"
-                  onClick={handleSaveSale}
+                  id="save-bill-income-btn"
+                  onClick={handleSaveIncome}
                   disabled={isBusy}
                   className="bg-gradient-to-r from-green-500 to-emerald-600 text-white hover:opacity-90"
                 >
-                  {isSavingSale ? (
-                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />Saving…</>
+                  {isSavingIncome ? (
+                    <><Loader2 className="h-4 w-4 animate-spin mr-2" />{t("saving_income", "scan")}</>
                   ) : (
-                    <><TrendingUp className="h-4 w-4 mr-2" />Add to Transaction</>
+                    <><TrendingUp className="h-4 w-4 mr-2" />{t("add_as_income", "scan")}</>
                   )}
                 </Button>
               </div>
@@ -525,7 +570,7 @@ export default function ScanBill() {
         {imageBase64 && scanStage === "done" && editedResult && (
           <Card className="shadow-card">
             <CardContent className="p-3">
-              <p className="text-xs text-muted-foreground mb-2">Scanned Image Preview</p>
+              <p className="text-xs text-muted-foreground mb-2">{t("preview", "scan")}</p>
               <img
                 src={imageBase64}
                 alt="Scanned bill"

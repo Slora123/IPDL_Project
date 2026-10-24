@@ -1,10 +1,13 @@
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface ProfitLossChartProps {
   data?: { name: string; profit: number }[];
 }
 
 export function ProfitLossChart({ data = [] }: ProfitLossChartProps) {
+  const { t } = useI18n();
+
   return (
     <ResponsiveContainer width="100%" height={300}>
       <LineChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -33,7 +36,7 @@ export function ProfitLossChart({ data = [] }: ProfitLossChartProps) {
           stroke="#0ea5e9"
           strokeWidth={3}
           dot={{ fill: '#0ea5e9', strokeWidth: 2, r: 4 }}
-          name="Profit (₹)"
+          name={t('profit_rupees', 'common', 'Profit (₹)')}
         />
       </LineChart>
     </ResponsiveContainer>

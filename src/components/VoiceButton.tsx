@@ -12,6 +12,7 @@ import { Mic, MicOff, Loader2, CheckCircle, XCircle, Globe, TrendingUp, Trending
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { usePreferences } from "@/contexts/PreferencesContext";
+import { useI18n } from "@/contexts/I18nContext";
 import api from "@/lib/api";
 
 type Stage =
@@ -37,19 +38,8 @@ interface TransactionPreview {
   language?: string;
 }
 
-const STAGE_LABELS: Record<Stage, string> = {
-  idle: "",
-  listening: "🎙️ Listening...",
-  processing_speech: "🔄 Transcribing speech...",
-  converting_english: "🌐 Converting to English...",
-  understanding_transaction: "🧠 Understanding transaction...",
-  ready_to_confirm: "✅ Ready to confirm",
-  saving: "💾 Saving transaction...",
-  done: "✅ Saved!",
-  error: "❌ Error",
-};
-
 export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () => void }) {
+  const { t, tCategory } = useI18n();
   const [stage, setStage] = useState<Stage>("idle");
   const [recordingTime, setRecordingTime] = useState(0);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -57,6 +47,20 @@ export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () =>
   const [transcript, setTranscript] = useState("");
   const [englishText, setEnglishText] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
+
+  const getStageLabel = (st: Stage) => {
+    switch (st) {
+      case "listening": return `🎙️ ${t('listening', 'voice', 'Listening...')}`;
+      case "processing_speech": return `🔄 ${t('processing_audio', 'voice', 'Processing Audio...')}`;
+      case "converting_english": return `🌐 ${t('analyzing', 'voice', 'Analyzing Transaction...')}`;
+      case "understanding_transaction": return `🧠 ${t('analyzing', 'voice', 'Analyzing Transaction...')}`;
+      case "ready_to_confirm": return `✅ ${t('confirm_save', 'voice', 'Ready to confirm')}`;
+      case "saving": return `💾 ${t('saving', 'voice', 'Saving...')}`;
+      case "done": return `✅ ${t('success', 'common', 'Saved!')}`;
+      case "error": return `❌ ${t('error', 'common', 'Error')}`;
+      default: return "";
+    }
+  };
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -75,7 +79,7 @@ export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () =>
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       const mimeTypes = ['audio/webm', 'audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/mp4', 'audio/wav'];
-      let selectedMimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || '';
+      const selectedMimeType = mimeTypes.find(m => MediaRecorder.isTypeSupported(m)) || '';
 
       const options = selectedMimeType ? { mimeType: selectedMimeType } : {};
       const mediaRecorder = new MediaRecorder(stream, options);
@@ -260,7 +264,7 @@ export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () =>
           {/* Status label above button */}
           {stage !== "idle" && (
             <div className="text-xs font-medium bg-background border rounded-full px-3 py-1 shadow text-center whitespace-nowrap animate-in fade-in duration-200">
-              {STAGE_LABELS[stage]}
+              {getStageLabel(stage)}
             </div>
           )}
 
@@ -273,7 +277,7 @@ export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () =>
             className={`rounded-full h-14 w-14 shadow-xl hover:shadow-2xl transition-all ${
               isRecording ? "animate-pulse ring-4 ring-destructive/30" : ""
             }`}
-            title={isRecording ? "Stop recording" : "Start voice input"}
+            title={isRecording ? t('cancel', 'common', 'Stop recording') : t('record_transaction', 'voice', 'Start voice input')}
           >
             {isProcessing ? (
               <Loader2 className="h-6 w-6 animate-spin" />
@@ -299,7 +303,7 @@ export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () =>
               className="text-xs h-7 px-2"
               onClick={cancelRecording}
             >
-              Cancel
+              {t('cancel', 'common', 'Cancel')}
             </Button>
           )}
         </div>
@@ -315,12 +319,12 @@ export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () =>
               ) : (
                 <XCircle className="h-5 w-5 text-red-500" />
               )}
-              Confirm Transaction
+              {t('transaction_preview', 'voice', 'Confirm Transaction')}
             </DialogTitle>
             <DialogDescription className="space-y-1">
               {transcript && (
                 <span className="block text-xs text-muted-foreground">
-                  🎙️ Heard: <em>"{transcript}"</em>
+                  🎙️ {t('recognized', 'voice', 'Heard')}: <em>"{transcript}"</em>
                 </span>
               )}
               {englishText && englishText !== transcript && (
@@ -346,12 +350,14 @@ export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () =>
                   <TrendingDown className="h-5 w-5 text-red-500" />
                 )}
                 <div>
-                  <p className="text-sm text-muted-foreground">Type</p>
-                  <p className="text-lg font-semibold capitalize">{transactionPreview?.type}</p>
+                  <p className="text-sm text-muted-foreground">{t('type_label', 'dialogs', 'Type')}</p>
+                  <p className="text-lg font-semibold capitalize">
+                    {transactionPreview?.type === "income" ? t('income', 'common', 'Income') : t('expense', 'common', 'Expense')}
+                  </p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-muted-foreground">Amount</p>
+                <p className="text-sm text-muted-foreground">{t('amount_label', 'dialogs', 'Amount')}</p>
                 <p className={`text-2xl font-bold ${transactionPreview?.type === "income" ? "text-green-600" : "text-red-600"}`}>
                   ₹{transactionPreview?.amount?.toLocaleString()}
                 </p>
@@ -361,22 +367,22 @@ export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () =>
             {/* Details grid */}
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-muted/40 rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">Description</p>
+                <p className="text-xs text-muted-foreground mb-1">{t('item_label', 'dialogs', 'Description')}</p>
                 <p className="font-medium text-sm line-clamp-2">{transactionPreview?.item}</p>
               </div>
               <div className="p-3 bg-muted/40 rounded-lg">
-                <p className="text-xs text-muted-foreground mb-1">Category</p>
-                <Badge variant="secondary" className="text-xs">{transactionPreview?.category}</Badge>
+                <p className="text-xs text-muted-foreground mb-1">{t('category_label', 'dialogs', 'Category')}</p>
+                <Badge variant="secondary" className="text-xs">{tCategory(transactionPreview?.category || '')}</Badge>
               </div>
               {transactionPreview?.date && (
                 <div className="p-3 bg-muted/40 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-1">Date</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t('date_label', 'dialogs', 'Date')}</p>
                   <p className="font-medium text-sm">{transactionPreview.date}</p>
                 </div>
               )}
               {transactionPreview?.paymentMethod && (
                 <div className="p-3 bg-muted/40 rounded-lg">
-                  <p className="text-xs text-muted-foreground mb-1">Payment</p>
+                  <p className="text-xs text-muted-foreground mb-1">{t('payment', 'voice', 'Payment')}</p>
                   <p className="font-medium text-sm">{transactionPreview.paymentMethod}</p>
                 </div>
               )}
@@ -385,7 +391,7 @@ export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () =>
 
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={handleCancel}>
-              ❌ Cancel
+              ❌ {t('cancel', 'common', 'Cancel')}
             </Button>
             <Button
               onClick={handleConfirm}
@@ -395,9 +401,9 @@ export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () =>
                 : "bg-primary hover:bg-primary/90"}
             >
               {stage === "saving" ? (
-                <><Loader2 className="h-4 w-4 animate-spin mr-2" />Saving...</>
+                <><Loader2 className="h-4 w-4 animate-spin mr-2" />{t('saving', 'voice', 'Saving...')}</>
               ) : (
-                "✅ Confirm & Save"
+                `✅ ${t('confirm_save', 'voice', 'Confirm & Save')}`
               )}
             </Button>
           </DialogFooter>

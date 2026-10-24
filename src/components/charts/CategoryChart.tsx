@@ -1,12 +1,9 @@
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface CategoryChartProps {
   data?: { name: string; value: number; color: string }[];
 }
-
-const defaultData = [
-  { name: 'No Data', value: 1, color: 'hsl(var(--muted))' }
-];
 
 const RADIAN = Math.PI / 180;
 const renderCustomizedLabel = ({
@@ -32,7 +29,15 @@ const renderCustomizedLabel = ({
 };
 
 export function CategoryChart({ data = [] }: CategoryChartProps) {
-  const chartData = data.length > 0 ? data : defaultData;
+  const { t, tCategory } = useI18n();
+  const defaultData = [
+    { name: t('no_data', 'common', 'No Data'), value: 1, color: '#94a3b8' }
+  ];
+
+  const chartData = (data.length > 0 ? data : defaultData).map(item => ({
+    ...item,
+    name: tCategory(item.name)
+  }));
   return (
     <ResponsiveContainer width="100%" height={300}>
       <PieChart>

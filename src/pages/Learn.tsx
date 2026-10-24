@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { usePreferences } from "@/contexts/PreferencesContext";
+import { useI18n } from "@/contexts/I18nContext";
 import { useState } from "react";
 import {
   BookOpen,
@@ -28,6 +29,7 @@ export default function Learn() {
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
   const [showProgress, setShowProgress] = useState(false);
   const { language } = usePreferences();
+  const { t } = useI18n();
   const isEnglish = language === 'en';
 
   const handleFeatureNotReady = (featureName: string) => {
@@ -145,15 +147,15 @@ export default function Learn() {
     <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Learning Center</h1>
+          <h1 className="text-3xl font-bold">{t('title', 'learn', 'Learning Center')}</h1>
           <p className="text-muted-foreground">
-            {isEnglish ? "Improve your business skills with our courses and tips" : "शिक्षा केंद्र - हमारे पाठ्यक्रम और युक्तियों के साथ अपने व्यावसायिक कौशल में सुधार करें"}
+            {t('subtitle', 'learn', 'Improve your business skills with our courses and tips')}
           </p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={() => setShowProgress(true)}>
             <Star className="mr-2 h-4 w-4" />
-            My Progress
+            {t('status', 'common', 'My Progress')}
           </Button>
         </div>
       </div>
@@ -163,9 +165,9 @@ export default function Learn() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Award className="h-5 w-5 text-warning" />
-            Your Achievements
+            {t('success', 'common', 'Your Achievements')}
           </CardTitle>
-          <CardDescription>Track your learning progress</CardDescription>
+          <CardDescription>{t('subtitle', 'learn', 'Track your learning progress')}</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -187,10 +189,10 @@ export default function Learn() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto gap-2 p-1">
-          <TabsTrigger value="courses">Courses</TabsTrigger>
-          <TabsTrigger value="tips">Daily Tips</TabsTrigger>
-          <TabsTrigger value="videos">Video Tutorials</TabsTrigger>
-          <TabsTrigger value="resources">Resources</TabsTrigger>
+          <TabsTrigger value="courses">{t('learn_grow', 'common', 'Courses')}</TabsTrigger>
+          <TabsTrigger value="tips">{t('tips_header', 'learn', 'Daily Tips')}</TabsTrigger>
+          <TabsTrigger value="videos">{t('voice_recorded', 'transactions', 'Video Tutorials')}</TabsTrigger>
+          <TabsTrigger value="resources">{t('data_title', 'settings', 'Resources')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="courses" className="space-y-4">

@@ -45,7 +45,7 @@ interface Transaction {
 }
 
 export default function Transactions() {
-  const { t } = useI18n();
+  const { t, tCategory } = useI18n();
   const { language } = usePreferences();
   const isEnglish = language === 'en';
   const [searchTerm, setSearchTerm] = useState("");
@@ -207,7 +207,7 @@ export default function Transactions() {
 
               <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
                 <Badge className={`border-none ${getCategoryColor(transaction.category)}`}>
-                  {transaction.category}
+                  {tCategory(transaction.category)}
                 </Badge>
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3 w-3" />
@@ -228,7 +228,7 @@ export default function Transactions() {
                   {transaction.type === "income" ? "+" : "-"}₹{transaction.amount.toLocaleString()}
                 </div>
                 <div className="text-xs text-muted-foreground capitalize font-medium">
-                  {transaction.type === "income" ? t('income', 'dashboard') : t('expense', 'dashboard')}
+                  {transaction.type === "income" ? t('income', 'common', 'Income') : t('expense', 'common', 'Expense')}
                 </div>
               </div>
 
@@ -255,9 +255,9 @@ export default function Transactions() {
     <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-3xl font-bold truncate">{t('transaction_history', 'dashboard')}</h1>
+          <h1 className="text-xl sm:text-3xl font-bold truncate">{t('transaction_history', 'transactions', 'Transaction History')}</h1>
           <p className="text-muted-foreground">
-            {t('all_transactions', 'dashboard')}
+            {t('all_transactions', 'transactions', 'All your voice-recorded, scanned, and manual transactions')}
           </p>
         </div>
         <div className="flex flex-nowrap gap-1.5 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 hide-scrollbar">
@@ -266,38 +266,38 @@ export default function Transactions() {
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="flex-1 px-2 text-xs sm:text-sm sm:px-3 whitespace-nowrap">
                 <Filter className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
-                <span className="truncate">{t('filter', 'common')}</span>
+                <span className="truncate">{t('filter', 'common', 'Filter')}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-60">
               <div className="space-y-3">
                 <div>
-                  <Label className="text-xs font-medium">Type</Label>
+                  <Label className="text-xs font-medium">{t('filter_type', 'transactions', 'Type')}</Label>
                   <Select value={filterType} onValueChange={(value: any) => setFilterType(value)}>
                     <SelectTrigger className="h-8 mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All</SelectItem>
-                      <SelectItem value="income">Income</SelectItem>
-                      <SelectItem value="expense">Expense</SelectItem>
+                      <SelectItem value="all">{t('all', 'common', 'All')}</SelectItem>
+                      <SelectItem value="income">{t('income', 'common', 'Income')}</SelectItem>
+                      <SelectItem value="expense">{t('expense', 'common', 'Expense')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs font-medium">Category</Label>
+                  <Label className="text-xs font-medium">{t('category', 'common', 'Category')}</Label>
                   <Select value={filterCategory} onValueChange={setFilterCategory}>
                     <SelectTrigger className="h-8 mt-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Categories</SelectItem>
-                      <SelectItem value="General">General</SelectItem>
-                      <SelectItem value="Food">Food</SelectItem>
-                      <SelectItem value="Transport">Transport</SelectItem>
-                      <SelectItem value="Shopping">Shopping</SelectItem>
-                      <SelectItem value="Bills">Bills</SelectItem>
-                      <SelectItem value="Salary">Salary</SelectItem>
+                      <SelectItem value="all">{t('all_categories', 'transactions', 'All Categories')}</SelectItem>
+                      <SelectItem value="General">{tCategory('General')}</SelectItem>
+                      <SelectItem value="Food">{tCategory('Food')}</SelectItem>
+                      <SelectItem value="Transport">{tCategory('Transport')}</SelectItem>
+                      <SelectItem value="Shopping">{tCategory('Shopping')}</SelectItem>
+                      <SelectItem value="Bills">{tCategory('Bills')}</SelectItem>
+                      <SelectItem value="Salary">{tCategory('Salary')}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -310,13 +310,13 @@ export default function Transactions() {
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="flex-1 px-2 text-xs sm:text-sm sm:px-3 whitespace-nowrap">
                 <Calendar className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
-                <span className="truncate">{t('date_range', 'dashboard')}</span>
+                <span className="truncate">{t('date_range', 'transactions', 'Date Range')}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-60">
               <div className="space-y-3">
                 <div>
-                  <Label className="text-xs font-medium">Start Date</Label>
+                  <Label className="text-xs font-medium">{t('start_date', 'transactions', 'Start Date')}</Label>
                   <Input
                     type="date"
                     className="h-8 mt-1"
@@ -325,7 +325,7 @@ export default function Transactions() {
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-medium">End Date</Label>
+                  <Label className="text-xs font-medium">{t('end_date', 'transactions', 'End Date')}</Label>
                   <Input
                     type="date"
                     className="h-8 mt-1"
@@ -339,7 +339,7 @@ export default function Transactions() {
                   className="w-full"
                   onClick={() => { setDateRangeStart(""); setDateRangeEnd(""); }}
                 >
-                  Clear
+                  {t('clear', 'common', 'Clear')}
                 </Button>
               </div>
             </PopoverContent>
@@ -347,7 +347,7 @@ export default function Transactions() {
 
           <Button size="sm" className="flex-1 px-2 text-xs sm:text-sm sm:px-3 bg-gradient-primary whitespace-nowrap" onClick={() => setIsManualDialogOpen(true)}>
             <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
-            <span className="truncate">{t('add_manual', 'dashboard')}</span>
+            <span className="truncate">{t('add_manual', 'transactions', '+ Add Transaction')}</span>
           </Button>
         </div>
       </div>
@@ -389,7 +389,7 @@ export default function Transactions() {
         <TabsContent value="all" className="space-y-4">
           <div className="space-y-6">
             {sortedDateGroups.length === 0 ? (
-              <p className="text-muted-foreground text-center py-8">No transactions found</p>
+              <p className="text-muted-foreground text-center py-8">{t('no_transactions', 'transactions', 'No transactions found')}</p>
             ) : (
               sortedDateGroups.map(dateStr => (
                 <div key={dateStr}>

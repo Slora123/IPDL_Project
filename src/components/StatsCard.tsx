@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { LucideIcon } from "lucide-react";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface StatsCardProps {
   title: string;
@@ -18,6 +19,7 @@ export function StatsCard({
   variant = "default",
   className = "" 
 }: StatsCardProps) {
+  const { t } = useI18n();
   const isColoredBackground = className.includes("bg-gradient-success") || className.includes("bg-gradient-primary");
 
   const getVariantStyles = () => {
@@ -51,7 +53,7 @@ export function StatsCard({
             <p className={`text-2xl font-bold ${textColorClass}`}>{value}</p>
             {trend && (
               <p className={`text-sm font-medium ${getTrendColor()}`}>
-                {trend} from yesterday
+                {trend} {t("from_yesterday", "dashboard", "from yesterday")}
               </p>
             )}
           </div>

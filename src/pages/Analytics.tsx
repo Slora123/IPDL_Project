@@ -25,14 +25,13 @@ import {
 import { IncomeExpenseChart } from "@/components/charts/IncomeExpenseChart";
 import { ProfitLossChart } from "@/components/charts/ProfitLossChart";
 import { CategoryChart } from "@/components/charts/CategoryChart";
+import { useI18n } from "@/contexts/I18nContext";
 import api from "@/lib/api";
 // @ts-ignore
 import html2pdf from "html2pdf.js";
 
-
-
-
 export default function Analytics() {
+  const { t, tCategory } = useI18n();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [performanceMetrics, setPerformanceMetrics] = useState<any[]>([]);
@@ -51,9 +50,7 @@ export default function Analytics() {
   }, []);
 
   const fetchAnalytics = async () => {
-
     try {
-
       // Fetch all required analytics
       const [growthRes, spendingRes, weeklyRes] = await Promise.all([
         api.get('/api/analytics/growth'),
@@ -65,10 +62,10 @@ export default function Analytics() {
       const revGrowthStr = growth.revenueGrowth || "0%";
       const profitMarginStr = growth.profitMargin || "0%";
       setPerformanceMetrics([
-        { label: "Revenue Growth", value: revGrowthStr, trend: revGrowthStr.startsWith('-') ? "down" : "up", color: revGrowthStr.startsWith('-') ? "text-destructive" : "text-success" },
-        { label: "Expense Ratio", value: growth.expenseRatio || "0%", trend: "neutral", color: "text-warning" },
-        { label: "Profit Margin", value: profitMarginStr, trend: profitMarginStr.startsWith('-') ? "down" : "up", color: profitMarginStr.startsWith('-') ? "text-destructive" : "text-success" },
-        { label: "Customer Retention", value: growth.customerRetention || "0%", trend: "up", color: "text-success" },
+        { label: t("revenue_growth", "analytics", "Revenue Growth"), value: revGrowthStr, trend: revGrowthStr.startsWith('-') ? "down" : "up", color: revGrowthStr.startsWith('-') ? "text-destructive" : "text-success" },
+        { label: t("expense_ratio", "analytics", "Expense Ratio"), value: growth.expenseRatio || "0%", trend: "neutral", color: "text-warning" },
+        { label: t("profit_margin", "analytics", "Profit Margin"), value: profitMarginStr, trend: profitMarginStr.startsWith('-') ? "down" : "up", color: profitMarginStr.startsWith('-') ? "text-destructive" : "text-success" },
+        { label: t("customer_retention", "analytics", "Customer Retention"), value: growth.customerRetention || "0%", trend: "up", color: "text-success" },
       ]);
 
       const topCategories = Array.isArray(spendingRes.data?.topCategories) ? spendingRes.data.topCategories : [];
@@ -141,25 +138,25 @@ export default function Analytics() {
     <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6" id="analytics-content">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4" data-html2canvas-ignore>
         <div>
-          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
-          <p className="text-muted-foreground">Deep insights into your business performance</p>
+          <h1 className="text-3xl font-bold">{t('title', 'analytics', 'Financial Analytics')}</h1>
+          <p className="text-muted-foreground">{t('subtitle', 'analytics', 'Deep insights into your business performance')}</p>
         </div>
         <div className="grid grid-cols-3 gap-1 sm:gap-2 w-full sm:w-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-9 px-1 sm:px-3 text-[10px] sm:text-sm">
                 <Filter className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="truncate">Filters</span>
+                <span className="truncate">{t('filter', 'common', 'Filters')}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Filter Categories</DropdownMenuLabel>
+              <DropdownMenuLabel>{t('all_categories', 'transactions', 'Filter Categories')}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuCheckboxItem checked={filterActive} onCheckedChange={setFilterActive}>
-                Top Categories
+                {t('top_categories', 'spending', 'Top Categories')}
               </DropdownMenuCheckboxItem>
               <DropdownMenuCheckboxItem checked={false}>
-                All Categories
+                {t('all_categories', 'transactions', 'All Categories')}
               </DropdownMenuCheckboxItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -168,7 +165,7 @@ export default function Analytics() {
             <PopoverTrigger asChild>
               <Button variant="outline" className="h-9 px-1 sm:px-3 text-[10px] sm:text-sm">
                 <CalendarIcon className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="truncate">{date ? date.toLocaleDateString() : 'Date'}</span>
+                <span className="truncate">{date ? date.toLocaleDateString() : t('date', 'common', 'Date')}</span>
               </Button>
             </PopoverTrigger>
             <PopoverContent className="w-auto p-0" align="end">
@@ -183,7 +180,7 @@ export default function Analytics() {
 
           <Button className="bg-gradient-primary h-9 px-1 sm:px-3 text-[10px] sm:text-sm" onClick={handleExportPDF}>
             <Download className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="truncate">Export</span>
+            <span className="truncate">{t('export_csv', 'transactions', 'Export')}</span>
           </Button>
         </div>
       </div>
@@ -214,10 +211,10 @@ export default function Analytics() {
       {/* Charts Tabs */}
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="grid w-full grid-cols-4 h-auto gap-1 p-1">
-          <TabsTrigger value="overview" className="text-[10px] sm:text-sm px-0">Overview</TabsTrigger>
-          <TabsTrigger value="revenue" className="text-[10px] sm:text-sm px-0">Revenue</TabsTrigger>
-          <TabsTrigger value="categories" className="text-[10px] sm:text-sm px-0">Categories</TabsTrigger>
-          <TabsTrigger value="trends" className="text-[10px] sm:text-sm px-0">Trends</TabsTrigger>
+          <TabsTrigger value="overview" className="text-[10px] sm:text-sm px-0">{t('all_tab', 'transactions', 'Overview')}</TabsTrigger>
+          <TabsTrigger value="revenue" className="text-[10px] sm:text-sm px-0">{t('income', 'common', 'Revenue')}</TabsTrigger>
+          <TabsTrigger value="categories" className="text-[10px] sm:text-sm px-0">{t('category', 'common', 'Categories')}</TabsTrigger>
+          <TabsTrigger value="trends" className="text-[10px] sm:text-sm px-0">{t('profit_loss_trend', 'dashboard', 'Trends')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-4">
@@ -226,9 +223,9 @@ export default function Analytics() {
               <CardHeader className="p-4 sm:p-6 pb-2">
                 <CardTitle className="flex items-center gap-2 text-sm sm:text-xl whitespace-nowrap">
                   <BarChart3 className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                  <span className="truncate">Income vs Expenses (Weekly)</span>
+                  <span className="truncate">{t('income_vs_expenses', 'dashboard', 'Income vs Expenses (Weekly)')}</span>
                 </CardTitle>
-                <CardDescription className="text-xs sm:text-sm">Last 7 days performance breakdown</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">{t('weekly_overview', 'analytics', 'Last 7 days performance breakdown')}</CardDescription>
               </CardHeader>
               <CardContent className="p-1 sm:p-6 pb-2">
                 <IncomeExpenseChart data={weeklyStats} />
@@ -239,9 +236,9 @@ export default function Analytics() {
               <CardHeader className="p-4 sm:p-6 pb-2">
                 <CardTitle className="flex items-center gap-2 text-sm sm:text-xl whitespace-nowrap">
                   <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0" />
-                  <span className="truncate">Profit Trend</span>
+                  <span className="truncate">{t('profit_trend', 'dashboard', 'Profit Trend')}</span>
                 </CardTitle>
-                <CardDescription className="text-xs sm:text-sm">Daily profit/loss tracking</CardDescription>
+                <CardDescription className="text-xs sm:text-sm">{t('daily_profit_tracking', 'dashboard', 'Daily profit/loss tracking')}</CardDescription>
               </CardHeader>
               <CardContent className="p-1 sm:p-6 pb-2">
                 <ProfitLossChart data={weeklyStats.map(d => ({ name: d.name, profit: d.profit }))} />
@@ -255,8 +252,8 @@ export default function Analytics() {
             <div className="lg:col-span-2">
               <Card className="shadow-card">
                 <CardHeader className="p-4 sm:p-6 pb-2">
-                  <CardTitle className="text-sm sm:text-xl truncate">Revenue Breakdown by Category</CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">Analyze which categories drive the most revenue</CardDescription>
+                  <CardTitle className="text-sm sm:text-xl truncate">{t('category_breakdown', 'dashboard', 'Revenue Breakdown by Category')}</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">{t('top_categories', 'spending', 'Analyze which categories drive the most revenue')}</CardDescription>
                 </CardHeader>
                 <CardContent className="p-1 sm:p-6 pb-2">
                   <CategoryChart data={categoryData} />
@@ -268,15 +265,15 @@ export default function Analytics() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Target className="h-5 w-5" />
-                  Top Performers
+                  {t('top_performers', 'analytics', 'Top Performers')}
                 </CardTitle>
-                <CardDescription>Best performing categories this month</CardDescription>
+                <CardDescription>{t('top_categories', 'spending', 'Best performing categories this month')}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 {topCategories.map((category, index) => (
                   <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div>
-                      <p className="font-medium">{category.name}</p>
+                      <p className="font-medium">{tCategory(category.name)}</p>
                       <p className="text-sm text-muted-foreground">₹{(category.revenue || 0).toLocaleString()}</p>
                     </div>
                     <div className="text-success text-sm font-medium">

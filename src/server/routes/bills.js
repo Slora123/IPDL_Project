@@ -9,7 +9,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import { scanBill, validateImageFile } from '../services/ocr.js';
-import { createTransaction, billRefExistsForUser } from '../services/db.js';
+import { createTransaction, billRefExistsForUser, localDateStr } from '../services/db.js';
 
 const router = Router();
 
@@ -114,9 +114,9 @@ router.post('/confirm', async (req, res) => {
     const saved = await createTransaction(req.user.id, {
       type:         'expense',
       amount:       total,
-      item:         buildItemDescription(items, vendorName),
+      item:         transaction.description?.trim() || buildItemDescription(items, vendorName),
       category:     category || 'Shopping',
-      date:         date || new Date().toISOString().slice(0, 10),
+      date:         date || localDateStr(),
       merchant:     vendorName,
       source:       'bill',
       billRef:      invoiceNumber || null,
@@ -156,6 +156,7 @@ router.post('/confirm-sale', async (req, res) => {
     }
 
     const itemDesc = saleDescription?.trim() ||
+                     transaction.description?.trim() ||
                      buildItemDescription(items, vendorName) ||
                      'Customer Sale';
 
@@ -164,7 +165,7 @@ router.post('/confirm-sale', async (req, res) => {
       amount:       total,
       item:         itemDesc,
       category:     category || 'Sales',
-      date:         date || new Date().toISOString().slice(0, 10),
+      date:         date || localDateStr(),
       merchant:     vendorName,
       source:       'bill',
       billRef:      invoiceNumber || null,

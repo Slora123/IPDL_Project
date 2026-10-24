@@ -192,8 +192,8 @@ export function Dashboard() {
               <div className="space-y-4">
                 {recentTransactions.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
-                    <p className="text-sm font-medium">No transactions recorded yet.</p>
-                    <p className="text-xs mt-1">Tap <strong>+ Add Manual</strong> or use the microphone to add your first transaction!</p>
+                    <p className="text-sm font-medium">{t("no_recent_transactions", "dashboard", "No transactions recorded yet.")}</p>
+                    <p className="text-xs mt-1">{t("all_transactions", "transactions", "Add transactions to see insights here.")}</p>
                   </div>
                 ) : (
                   recentTransactions.map((transaction) => (
@@ -231,11 +231,11 @@ export function Dashboard() {
             <p className="text-muted-foreground">
               {Array.isArray(categoryData) && categoryData[0] ? (
                 <>
-                  <strong>Top Performing Category:</strong> {categoryData[0].name} is currently leading your activity. Keep monitoring your flow!
+                  <strong>{t("top_performing", "dashboard")}</strong> {categoryData[0].name}
                 </>
               ) : (
                 <>
-                  <strong>Track Daily Cash Flow:</strong> Add transactions to see category-specific insights here.
+                  {t("track_daily_cashflow", "dashboard")}
                 </>
               )}
             </p>

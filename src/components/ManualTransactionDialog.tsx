@@ -19,6 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface ManualTransactionDialogProps {
     open: boolean;
@@ -36,6 +37,7 @@ export function ManualTransactionDialog({
     onOpenChange,
     onSuccess,
 }: ManualTransactionDialogProps) {
+    const { t, tCategory } = useI18n();
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
@@ -107,18 +109,18 @@ export function ManualTransactionDialog({
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px] bg-white text-slate-900 border-slate-200 shadow-xl">
                 <DialogHeader>
-                    <DialogTitle>Add Transaction Manually</DialogTitle>
+                    <DialogTitle>{t('add_title', 'dialogs', 'Add Manual Transaction')}</DialogTitle>
                     <DialogDescription>
-                        Enter the details of your transaction below.
+                        {t('add_desc', 'dialogs', 'Enter the details of your transaction below.')}
                     </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleSubmit} className="space-y-4 py-4">
                     <div className="grid gap-2">
-                        <Label htmlFor="item">Item Name</Label>
+                        <Label htmlFor="item">{t('item_label', 'dialogs', 'Item Name')}</Label>
                         <Input
                             id="item"
                             required
-                            placeholder="e.g. Milk, Salary, Rent"
+                            placeholder={t('item_placeholder', 'dialogs', 'e.g. Milk, Salary, Rent')}
                             value={formData.item}
                             onChange={(e) =>
                                 setFormData({ ...formData, item: e.target.value })
@@ -127,7 +129,7 @@ export function ManualTransactionDialog({
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div className="grid gap-2">
-                            <Label htmlFor="amount">Amount (₹)</Label>
+                            <Label htmlFor="amount">{t('amount_label', 'dialogs', 'Amount (₹)')}</Label>
                             <Input
                                 id="amount"
                                 type="number"
@@ -140,7 +142,7 @@ export function ManualTransactionDialog({
                             />
                         </div>
                         <div className="grid gap-2">
-                            <Label htmlFor="type">Type</Label>
+                            <Label htmlFor="type">{t('type_label', 'dialogs', 'Type')}</Label>
                             <Select
                                 value={formData.type}
                                 onValueChange={(value) =>
@@ -148,17 +150,17 @@ export function ManualTransactionDialog({
                                 }
                             >
                                 <SelectTrigger id="type">
-                                    <SelectValue placeholder="Select type" />
+                                    <SelectValue placeholder={t('type', 'transactions', 'Select type')} />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="income">Income</SelectItem>
-                                    <SelectItem value="expense">Expense</SelectItem>
+                                    <SelectItem value="income">{t('income', 'common', 'Income')}</SelectItem>
+                                    <SelectItem value="expense">{t('expense', 'common', 'Expense')}</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="category">Category</Label>
+                        <Label htmlFor="category">{t('category_label', 'dialogs', 'Category')}</Label>
                         <Select
                             value={formData.category}
                             onValueChange={(value) =>
@@ -166,20 +168,20 @@ export function ManualTransactionDialog({
                             }
                         >
                             <SelectTrigger id="category">
-                                <SelectValue placeholder="Select category" />
+                                <SelectValue placeholder={t('category', 'common', 'Select category')} />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="General">General</SelectItem>
-                                <SelectItem value="Food & Beverage">Food & Beverage</SelectItem>
-                                <SelectItem value="Grocery">Grocery</SelectItem>
-                                <SelectItem value="Rent">Rent</SelectItem>
-                                <SelectItem value="Utilities">Utilities</SelectItem>
-                                <SelectItem value="Other">Other</SelectItem>
+                                <SelectItem value="General">{tCategory('General')}</SelectItem>
+                                <SelectItem value="Food & Beverage">{tCategory('Food & Beverage')}</SelectItem>
+                                <SelectItem value="Grocery">{tCategory('Grocery')}</SelectItem>
+                                <SelectItem value="Rent">{tCategory('Rent')}</SelectItem>
+                                <SelectItem value="Utilities">{tCategory('Utilities')}</SelectItem>
+                                <SelectItem value="Other">{tCategory('Other')}</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>
                     <div className="grid gap-2">
-                        <Label htmlFor="date">Date</Label>
+                        <Label htmlFor="date">{t('date_label', 'dialogs', 'Date')}</Label>
                         <Input
                             id="date"
                             type="date"
@@ -192,7 +194,7 @@ export function ManualTransactionDialog({
                     </div>
                     <DialogFooter>
                         <Button type="submit" disabled={loading} className="w-full bg-gradient-primary">
-                            {loading ? "Adding..." : "Add Transaction"}
+                            {loading ? t('loading', 'common', 'Adding...') : t('button_add', 'dialogs', 'Add Transaction')}
                         </Button>
                     </DialogFooter>
                 </form>

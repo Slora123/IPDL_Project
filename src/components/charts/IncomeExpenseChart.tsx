@@ -1,10 +1,13 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { useI18n } from '@/contexts/I18nContext';
 
 interface IncomeExpenseChartProps {
   data?: { name: string; income: number; expense: number }[];
 }
 
 export function IncomeExpenseChart({ data = [] }: IncomeExpenseChartProps) {
+  const { t } = useI18n();
+
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
@@ -31,13 +34,13 @@ export function IncomeExpenseChart({ data = [] }: IncomeExpenseChartProps) {
           dataKey="income"
           fill="#22c55e"
           radius={[4, 4, 0, 0]}
-          name="Income (₹)"
+          name={t('income_rupees', 'common', 'Income (₹)')}
         />
         <Bar
           dataKey="expense"
           fill="#ef4444"
           radius={[4, 4, 0, 0]}
-          name="Expense (₹)"
+          name={t('expense_rupees', 'common', 'Expense (₹)')}
         />
       </BarChart>
     </ResponsiveContainer>

@@ -1,10 +1,11 @@
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { UserMenu } from "@/components/UserMenu";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { Button } from "@/components/ui/button";
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "@/contexts/ThemeContext";
-import { useTranslatedUI } from "@/hooks/useTranslatedUI";
+import { useI18n } from "@/contexts/I18nContext";
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -12,7 +13,7 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const { theme, toggleTheme } = useTheme();
-  const ui = useTranslatedUI({ headerTitle: "Trackify Dashboard" });
+  const { t } = useI18n();
 
   return (
     <SidebarProvider>
@@ -23,10 +24,13 @@ export function Layout({ children }: LayoutProps) {
             <div className="flex items-center gap-4">
               <SidebarTrigger />
               <div className="flex items-center gap-2">
-                <h1 className="text-lg font-semibold hidden sm:block">{ui.headerTitle}</h1>
+                <h1 className="text-lg font-semibold hidden sm:block">
+                  {t("headerTitle", "common")}
+                </h1>
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <LanguageSelector />
               <Button
                 variant="ghost"
                 size="icon"

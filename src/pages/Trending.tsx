@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { usePreferences } from "@/contexts/PreferencesContext";
+import { useI18n } from "@/contexts/I18nContext";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 interface TrendItem {
@@ -195,6 +196,7 @@ function toggleSaved(id: string): string[] {
 
 // ── "Should I Buy This?" panel ────────────────────────────────────────────────
 function BuyPanel({ item, onClose }: { item: TrendItem; onClose: () => void }) {
+  const { t } = useI18n();
   const [purchase, setPurchase]   = useState(item.purchaseCost.toString());
   const [selling,  setSelling]    = useState(item.sellingPrice.toString());
   const [qty,      setQty]        = useState("10");
@@ -246,7 +248,7 @@ function BuyPanel({ item, onClose }: { item: TrendItem; onClose: () => void }) {
               {SHOP_CATEGORY_ICONS[item.shopCategory] || <Package className="h-5 w-5" />}
             </div>
             <div className="min-w-0">
-              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">Should I Buy This?</p>
+              <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{t("should_i_buy", "trending", "Should I Buy This?")}</p>
               <h2 className="font-bold text-base leading-tight mt-0.5">{item.product}</h2>
               <p className="text-xs text-muted-foreground mt-0.5">{item.unit} · {item.shopCategory}</p>
             </div>
@@ -260,15 +262,15 @@ function BuyPanel({ item, onClose }: { item: TrendItem; onClose: () => void }) {
           {/* Estimate tag */}
           <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-500/5 border border-amber-500/20 text-xs text-amber-400">
             <AlertTriangle className="h-4 w-4 shrink-0" />
-            <span>Prices below are <strong>sample estimates from the CSV</strong> (19-Oct-2026). Always verify with your supplier.</span>
+            <span>{t("sample_estimate_warning", "trending", "Prices below are sample estimates from the CSV (19-Oct-2026). Always verify with your supplier.")}</span>
           </div>
 
           {/* CSV snapshot */}
           <div className="grid grid-cols-3 gap-3 text-center">
             {[
-              { label: "Buy Price", value: fmt(item.purchaseCost) },
-              { label: "Sell Price", value: fmt(item.sellingPrice) },
-              { label: "Gross Profit", value: fmt(item.grossProfit) },
+              { label: t("buy", "trending", "Buy Price"), value: fmt(item.purchaseCost) },
+              { label: t("sell", "trending", "Sell Price"), value: fmt(item.sellingPrice) },
+              { label: t("profit_unit", "trending", "Gross Profit"), value: fmt(item.grossProfit) },
             ].map(({ label, value }) => (
               <div key={label} className="bg-muted/40 rounded-xl p-3">
                 <div className="text-xs text-muted-foreground mb-1">{label}</div>
@@ -279,26 +281,26 @@ function BuyPanel({ item, onClose }: { item: TrendItem; onClose: () => void }) {
 
           {/* Inputs */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold">Your numbers</h3>
+            <h3 className="text-sm font-semibold">{t("your_numbers", "trending", "Your numbers")}</h3>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">Purchase price / {item.unit}</Label>
+                <Label className="text-xs">{t("purchase_price", "trending", "Purchase price")} / {item.unit}</Label>
                 <Input value={purchase} onChange={e => setPurchase(e.target.value)} type="number" min="0.01" step="any" className="h-10" />
                 {buyInvalid && <p className="text-xs text-destructive">Enter a valid purchase price</p>}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Selling price / {item.unit}</Label>
+                <Label className="text-xs">{t("selling_price", "trending", "Selling price")} / {item.unit}</Label>
                 <Input value={selling} onChange={e => setSelling(e.target.value)} type="number" min="0" step="any" className="h-10" />
                 {sellMissing && <p className="text-xs text-destructive">Enter selling price</p>}
                 {!sellMissing && pSell === 0 && <p className="text-xs text-muted-foreground">Enter selling price to see margin</p>}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Quantity to buy</Label>
+                <Label className="text-xs">{t("quantity_to_buy", "trending", "Quantity to buy")}</Label>
                 <Input value={qty} onChange={e => setQty(e.target.value)} type="number" min="1" step="1" className="h-10" />
                 {qtyInvalid && <p className="text-xs text-destructive">Quantity cannot be negative</p>}
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Your budget (₹)</Label>
+                <Label className="text-xs">{t("your_budget", "trending", "Your budget (₹)")}</Label>
                 <Input value={budget} onChange={e => setBudget(e.target.value)} placeholder="e.g. 5000" type="number" min="0" step="any" className="h-10" />
                 {!hasBudget && <p className="text-xs text-muted-foreground">Add your budget to check fit</p>}
               </div>
@@ -332,7 +334,7 @@ function BuyPanel({ item, onClose }: { item: TrendItem; onClose: () => void }) {
           {/* Suggested trial */}
           {pBuy > 0 && (
             <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-sm">
-              <p className="font-medium text-primary mb-1">Suggested trial quantity</p>
+              <p className="font-medium text-primary mb-1">{t("suggested_trial", "trending", "Suggested trial quantity")}</p>
               <p className="text-2xl font-bold">{trialQty} {trialQty === 1 ? "unit" : "units"}</p>
               <p className="text-xs text-muted-foreground mt-1">
                 Cautious starting estimate — not a prediction. {shortShelf && "Short shelf life noted; start very small."}
@@ -352,7 +354,7 @@ function BuyPanel({ item, onClose }: { item: TrendItem; onClose: () => void }) {
 
           {/* Evidence */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold">Evidence</h3>
+            <h3 className="text-sm font-semibold">{t("evidence", "trending", "Evidence")}</h3>
             <div className="space-y-2 text-xs">
               {[
                 { label: "Demand driver",  value: item.demandDriver },
@@ -375,7 +377,7 @@ function BuyPanel({ item, onClose }: { item: TrendItem; onClose: () => void }) {
 
         <div className="sticky bottom-0 bg-card border-t border-border p-4">
           <Button onClick={onClose} className="w-full bg-gradient-primary font-semibold">
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back to list
+            <ArrowLeft className="h-4 w-4 mr-2" /> {t("back_to_list", "trending", "Back to list")}
           </Button>
         </div>
       </div>
@@ -391,6 +393,7 @@ function Sparkles({ className }: { className?: string }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function Trending() {
   const { location, shopCategory, setLocation, setShopCategory } = usePreferences();
+  const { t, tCategory } = useI18n();
 
   const [locationInput, setLocationInput] = useState(location || "");
   const [shopInput,     setShopInput]     = useState(shopCategory || "");
@@ -413,7 +416,7 @@ export default function Trending() {
   // Auto-load if previously saved
   useEffect(() => {
     if (shopCategory) doSearch(shopCategory);
-  }, []); // eslint-disable-line
+  }, []);
 
   function doSearch(cat: string) {
     const filtered = TRENDS.filter(t => t.shopCategory === cat).sort((a, b) => a.profitRank - b.profitRank);
@@ -451,12 +454,10 @@ export default function Trending() {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
-              Trending Items
+              {t('title', 'trending', 'Trending Items')}
             </h1>
             <p className="text-muted-foreground mt-0.5 text-sm">
-              Product candidates for {location
-                ? <span className="font-medium text-foreground">{location}</span>
-                : "your city"} — data as of 19-Oct-2026
+              {t('subtitle', 'trending', 'Product candidates and market demand insights')}
             </p>
           </div>
           {hasSearched && (
@@ -472,9 +473,9 @@ export default function Trending() {
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
               <Store className="h-5 w-5 text-primary" />
-              What type of shop do you own?
+              {t("what_shop_own", "trending", "What type of shop do you own?")}
             </CardTitle>
-            <CardDescription>Select your shop type to see products sorted by profit rank</CardDescription>
+            <CardDescription>{t("select_shop_type", "trending", "Select your shop type to see products sorted by profit rank")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-3">
@@ -482,7 +483,7 @@ export default function Trending() {
               <div className="relative flex-1">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Your city (e.g. Mumbai)"
+                  placeholder={t("city_placeholder", "trending", "Your city (e.g. Mumbai)")}
                   value={locationInput}
                   onChange={e => setLocationInput(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && handleSearch()}
@@ -494,7 +495,7 @@ export default function Trending() {
               <div className="relative flex-1" ref={dropRef}>
                 <Store className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
                 <Input
-                  placeholder="e.g. Grocery, Cafe, Pharmacy"
+                  placeholder={t("shop_placeholder", "trending", "e.g. Grocery, Cafe, Pharmacy")}
                   value={shopInput}
                   onFocus={() => setShowDrop(true)}
                   onChange={e => { setShopInput(e.target.value); setShowDrop(true); }}
@@ -521,7 +522,7 @@ export default function Trending() {
               </div>
 
               <Button className="bg-gradient-primary font-semibold gap-2 shrink-0" onClick={handleSearch} disabled={!shopInput.trim()}>
-                Find Trending Items
+                {t("find_trending_items", "trending", "Find Trending Items")}
               </Button>
             </div>
 
@@ -556,7 +557,7 @@ export default function Trending() {
                     <div className="p-2 rounded-full bg-primary/10"><Package className="h-5 w-5 text-primary" /></div>
                     <div>
                       <div className="text-2xl font-bold">{totalProducts}</div>
-                      <div className="text-xs text-muted-foreground">Products in category</div>
+                      <div className="text-xs text-muted-foreground">{t("products_in_category", "trending", "Products in category")}</div>
                     </div>
                   </CardContent>
                 </Card>
@@ -567,7 +568,7 @@ export default function Trending() {
                     <div className="p-2 rounded-full bg-emerald-500/10"><TrendingUp className="h-5 w-5 text-emerald-400" /></div>
                     <div>
                       <div className="text-2xl font-bold">{pct(bestMargin)}</div>
-                      <div className="text-xs text-muted-foreground">Best gross margin</div>
+                      <div className="text-xs text-muted-foreground">{t("best_gross_margin", "trending", "Best gross margin")}</div>
                     </div>
                   </CardContent>
                 </Card>
@@ -578,7 +579,7 @@ export default function Trending() {
                     <div className="p-2 rounded-full bg-violet-500/10"><Link2 className="h-5 w-5 text-violet-400" /></div>
                     <div>
                       <div className="text-2xl font-bold">{webAnchored}</div>
-                      <div className="text-xs text-muted-foreground">Web-anchored prices</div>
+                      <div className="text-xs text-muted-foreground">{t("web_anchored_prices", "trending", "Web-anchored prices")}</div>
                     </div>
                   </CardContent>
                 </Card>
@@ -596,7 +597,7 @@ export default function Trending() {
               </div>
               <div className="relative w-full sm:w-60">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Filter products..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 h-8 text-sm" />
+                <Input placeholder={t("filter_products", "trending", "Filter products...")} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-9 h-8 text-sm" />
               </div>
             </div>
 
@@ -629,22 +630,22 @@ export default function Trending() {
                       {/* Prices */}
                       <div className="grid grid-cols-3 gap-2 text-center">
                         <div className="bg-muted/40 rounded-lg py-2">
-                          <div className="text-[10px] text-muted-foreground">Buy</div>
+                          <div className="text-[10px] text-muted-foreground">{t("buy", "trending", "Buy")}</div>
                           <div className="font-semibold text-xs">{fmt(item.purchaseCost)}</div>
                         </div>
                         <div className="bg-muted/40 rounded-lg py-2">
-                          <div className="text-[10px] text-muted-foreground">Sell</div>
+                          <div className="text-[10px] text-muted-foreground">{t("sell", "trending", "Sell")}</div>
                           <div className="font-semibold text-xs">{fmt(item.sellingPrice)}</div>
                         </div>
                         <div className="bg-emerald-500/10 rounded-lg py-2">
-                          <div className="text-[10px] text-muted-foreground">Profit/unit</div>
+                          <div className="text-[10px] text-muted-foreground">{t("profit_unit", "trending", "Profit/unit")}</div>
                           <div className="font-semibold text-xs text-emerald-400">{fmt(item.grossProfit)}</div>
                         </div>
                       </div>
 
                       {/* Margin */}
                       <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground text-xs">Gross margin</span>
+                        <span className="text-muted-foreground text-xs">{t("gross_margin", "trending", "Gross margin")}</span>
                         <span className="font-bold text-emerald-400">{pct(item.grossMarginPct)}</span>
                       </div>
 
@@ -671,7 +672,7 @@ export default function Trending() {
                       <div className="flex items-center justify-between pt-1">
                         <span className="text-[10px] text-muted-foreground">{item.dataAsOf}</span>
                         <span className="text-xs text-primary font-medium flex items-center gap-1 group-hover:gap-2 transition-all">
-                          Should I buy this? <ChevronRight className="h-3 w-3" />
+                          {t("should_i_buy", "trending", "Should I Buy This?")} <ChevronRight className="h-3 w-3" />
                         </span>
                       </div>
                     </CardContent>

@@ -9,6 +9,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Wallet, Eye, EyeOff, Loader2, Globe } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePreferences } from '@/contexts/PreferencesContext';
+import { useI18n } from '@/contexts/I18nContext';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,6 +33,7 @@ const LANGUAGE_OPTIONS = [
 export default function AuthPage() {
   const { login, register } = useAuth();
   const { setLanguage, setName, setBusinessName, setPhone, resetPreferences, language } = usePreferences();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
@@ -55,10 +57,16 @@ export default function AuthPage() {
   const [regConfirm,      setRegConfirm]      = useState('');
   const [regBusiness,     setRegBusiness]     = useState('');
   const [regPhone,        setRegPhone]        = useState('');
-  const [regLanguage,     setRegLanguage]     = useState('en');
+  const [regLanguage,     setRegLanguage]     = useState(language || 'en');
   const [regLoading,      setRegLoading]      = useState(false);
   const [regError,        setRegError]        = useState('');
   const [showRegPw,       setShowRegPw]       = useState(false);
+
+  const handleLanguageChange = (val: string) => {
+    setLoginLanguage(val);
+    setRegLanguage(val);
+    setLanguage(val);
+  };
 
   // ── Handlers ─────────────────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
@@ -139,23 +147,23 @@ export default function AuthPage() {
 
       <Card className="w-full max-w-md shadow-xl border-border/50">
         <CardHeader className="pb-4">
-          <CardTitle className="text-center text-xl">Welcome</CardTitle>
+          <CardTitle className="text-center text-xl">{t('welcome_back', 'auth', 'Welcome')}</CardTitle>
           <CardDescription className="text-center">
-            Sign in to your account or create a new one
+            {t('sign_in_desc', 'auth', 'Sign in to your account or create a new one')}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="login" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="register">Register</TabsTrigger>
+              <TabsTrigger value="login">{t('sign_in', 'auth', 'Login')}</TabsTrigger>
+              <TabsTrigger value="register">{t('sign_up', 'auth', 'Register')}</TabsTrigger>
             </TabsList>
 
             {/* ── LOGIN TAB ───────────────────────────────────────────────── */}
             <TabsContent value="login">
               <form onSubmit={handleLogin} className="space-y-4" noValidate>
                 <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
+                  <Label htmlFor="login-email">{t('email_label', 'auth', 'Email')}</Label>
                   <Input
                     id="login-email"
                     type="email"
@@ -168,7 +176,7 @@ export default function AuthPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="login-password">Password</Label>
+                  <Label htmlFor="login-password">{t('password_label', 'auth', 'Password')}</Label>
                   <div className="relative">
                     <Input
                       id="login-password"
@@ -196,9 +204,9 @@ export default function AuthPage() {
                 <div className="space-y-2">
                   <Label htmlFor="login-language" className="flex items-center gap-1">
                     <Globe className="h-3.5 w-3.5" />
-                    App Language
+                    {t('language_label', 'auth', 'App Language')}
                   </Label>
-                  <Select value={loginLanguage} onValueChange={setLoginLanguage} disabled={loginLoading}>
+                  <Select value={loginLanguage} onValueChange={handleLanguageChange} disabled={loginLoading}>
                     <SelectTrigger id="login-language">
                       <SelectValue placeholder="Select Language" />
                     </SelectTrigger>
@@ -221,8 +229,8 @@ export default function AuthPage() {
 
                 <Button type="submit" className="w-full" disabled={loginLoading}>
                   {loginLoading ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in…</>
-                  ) : 'Sign In'}
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('loading', 'common', 'Signing in…')}</>
+                  ) : t('login_button', 'auth', 'Sign In')}
                 </Button>
               </form>
             </TabsContent>
@@ -232,7 +240,7 @@ export default function AuthPage() {
               <form onSubmit={handleRegister} className="space-y-4" noValidate>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-2">
-                    <Label htmlFor="reg-name">Full Name <span className="text-destructive">*</span></Label>
+                    <Label htmlFor="reg-name">{t('name_label', 'auth', 'Full Name')} <span className="text-destructive">*</span></Label>
                     <Input
                       id="reg-name"
                       placeholder="Ravi Patel"
@@ -243,7 +251,7 @@ export default function AuthPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="reg-phone">Phone</Label>
+                    <Label htmlFor="reg-phone">{t('phone_label', 'auth', 'Phone')}</Label>
                     <Input
                       id="reg-phone"
                       type="tel"
@@ -257,7 +265,7 @@ export default function AuthPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reg-email">Email <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="reg-email">{t('email_label', 'auth', 'Email')} <span className="text-destructive">*</span></Label>
                   <Input
                     id="reg-email"
                     type="email"
@@ -270,7 +278,7 @@ export default function AuthPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reg-business">Business / Shop Name</Label>
+                  <Label htmlFor="reg-business">{t('business_label', 'auth', 'Business / Shop Name')}</Label>
                   <Input
                     id="reg-business"
                     placeholder="Patel Grocery Mart"
@@ -284,9 +292,9 @@ export default function AuthPage() {
                 <div className="space-y-2">
                   <Label htmlFor="reg-language" className="flex items-center gap-1">
                     <Globe className="h-3.5 w-3.5" />
-                    Preferred Language <span className="text-destructive">*</span>
+                    {t('language_label', 'auth', 'Preferred Language')} <span className="text-destructive">*</span>
                   </Label>
-                  <Select value={regLanguage} onValueChange={setRegLanguage} disabled={regLoading}>
+                  <Select value={regLanguage} onValueChange={handleLanguageChange} disabled={regLoading}>
                     <SelectTrigger id="reg-language">
                       <SelectValue placeholder="Select Language" />
                     </SelectTrigger>
@@ -299,13 +307,10 @@ export default function AuthPage() {
                       ))}
                     </SelectContent>
                   </Select>
-                  <p className="text-xs text-muted-foreground">
-                    The entire app UI will be shown in this language.
-                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reg-password">Password <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="reg-password">{t('password_label', 'auth', 'Password')} <span className="text-destructive">*</span></Label>
                   <div className="relative">
                     <Input
                       id="reg-password"
@@ -330,7 +335,7 @@ export default function AuthPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="reg-confirm">Confirm Password <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="reg-confirm">{t('password_label', 'auth', 'Confirm Password')} <span className="text-destructive">*</span></Label>
                   <Input
                     id="reg-confirm"
                     type={showRegPw ? 'text' : 'password'}
@@ -350,8 +355,8 @@ export default function AuthPage() {
 
                 <Button type="submit" className="w-full" disabled={regLoading}>
                   {regLoading ? (
-                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account…</>
-                  ) : 'Create Account'}
+                    <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> {t('loading', 'common', 'Creating account…')}</>
+                  ) : t('register_button', 'auth', 'Create Account')}
                 </Button>
 
                 <p className="text-xs text-center text-muted-foreground">
