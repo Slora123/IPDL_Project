@@ -19,6 +19,7 @@ export function IncomeExpenseChart({ data = [] }: IncomeExpenseChartProps) {
           fontSize={12}
         />
         <Tooltip
+          formatter={(value: any) => [`₹${Number(value || 0).toLocaleString()}`, '']}
           contentStyle={{
             backgroundColor: 'hsl(var(--card))',
             border: '1px solid hsl(var(--border))',
@@ -28,13 +29,13 @@ export function IncomeExpenseChart({ data = [] }: IncomeExpenseChartProps) {
         />
         <Bar
           dataKey="income"
-          fill="hsl(var(--success))"
+          fill="#22c55e"
           radius={[4, 4, 0, 0]}
           name="Income (₹)"
         />
         <Bar
           dataKey="expense"
-          fill="hsl(var(--destructive))"
+          fill="#ef4444"
           radius={[4, 4, 0, 0]}
           name="Expense (₹)"
         />

@@ -222,8 +222,9 @@ export function VoiceButton({ onTransactionSaved }: { onTransactionSaved?: () =>
         description: `${transactionPreview.type === 'income' ? 'Income' : 'Expense'}: ₹${transactionPreview.amount.toLocaleString()} — ${transactionPreview.item}`,
       });
 
-      // Trigger parent refresh
+      // Trigger parent refresh & global event
       onTransactionSaved?.();
+      window.dispatchEvent(new CustomEvent('trackify:transaction-saved'));
 
       setTimeout(() => setStage("idle"), 1500);
     } catch (error: any) {

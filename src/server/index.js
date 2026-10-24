@@ -111,7 +111,8 @@ app.get('/health',     (_req, res) => res.json({ status: 'ok', time: new Date().
 // Dashboard stats — requires auth, filtered by the authenticated user's ID
 app.get('/api/stats', requireAuth, async (req, res) => {
   try {
-    res.json(await getSummary(req.user.id));
+    const clientDate = req.query.date || req.headers['x-client-date'];
+    res.json(await getSummary(req.user.id, clientDate));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Failed to fetch stats' });

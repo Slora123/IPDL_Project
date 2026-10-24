@@ -181,6 +181,7 @@ export default function ScanBill() {
         transaction: { ...editedResult, category: expenseCategory },
         imageBase64,
       });
+      window.dispatchEvent(new CustomEvent('trackify:transaction-saved'));
       toast({
         title: "✅ Expense Saved!",
         description: `₹${editedResult.total.toFixed(2)} expense from ${editedResult.vendorName || "Unknown Vendor"} recorded.`,
@@ -219,6 +220,7 @@ export default function ScanBill() {
         },
         imageBase64,
       });
+      window.dispatchEvent(new CustomEvent('trackify:transaction-saved'));
       toast({
         title: "✅ Sale Recorded!",
         description: `₹${editedResult.total.toFixed(2)} revenue from "${saleDescription}" added to your income.`,

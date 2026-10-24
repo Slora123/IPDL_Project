@@ -95,10 +95,12 @@ export const ready = initSchema().catch(err => {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 const toISO = () => new Date().toISOString();
 
-const localDateStr = (d = new Date()) =>
-  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+export const localDateStr = (d = new Date()) => {
+  const dateObj = typeof d === 'string' || typeof d === 'number' ? new Date(d) : d;
+  return dateObj.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+};
 
-const timeStr = (d = new Date()) =>
+export const timeStr = (d = new Date()) =>
   d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
 
 function parseRow(r) {
@@ -146,7 +148,8 @@ export async function createTransaction(userId, data) {
   if (!userId) throw new Error('userId is required');
   const id  = randomUUID();
   const now = toISO();
-  const date = data.date || localDateStr();
+  const rawDate = String(data.date || '').trim();
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(rawDate) ? rawDate : localDateStr();
   const time = data.time || timeStr();
 
   await exec(
@@ -245,12 +248,14 @@ export async function deleteTransaction(id, userId) {
 }
 
 // ── Analytics ─────────────────────────────────────────────────────────────────
-export async function getSummary(userId) {
+export async function getSummary(userId, clientDate) {
   const txs = await getAllTransactions(userId);
 
-  const todayDate    = new Date();
-  const todayStr     = localDateStr(todayDate);
-  const yestDate     = new Date(todayDate);
+  const todayStr = clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate)
+    ? clientDate
+    : localDateStr();
+  const todayDate = new Date(todayStr + 'T12:00:00');
+  const yestDate = new Date(todayDate);
   yestDate.setDate(yestDate.getDate() - 1);
   const yesterdayStr = localDateStr(yestDate);
 
@@ -299,14 +304,20 @@ export async function getSummary(userId) {
   };
 }
 
-export async function getWeeklyStats(userId) {
+export async function getWeeklyStats(userId, clientDate) {
   const txs  = await getAllTransactions(userId);
   const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const baseDateStr = clientDate && /^\d{4}-\d{2}-\d{2}$/.test(clientDate)
+    ? clientDate
+    : localDateStr();
+  const baseDate = new Date(baseDateStr + 'T12:00:00');
+
   const map  = {};
   for (let i = 6; i >= 0; i--) {
-    const d   = new Date(); d.setDate(d.getDate() - i);
+    const d   = new Date(baseDate);
+    d.setDate(d.getDate() - i);
     const key = localDateStr(d);
-    map[key]  = { name: days[d.getDay()], income: 0, expense: 0, profit: 0 };
+    map[key]  = { name: days[d.getDay()], income: 0, expense: 0, profit: 0, date: key };
   }
   for (const t of txs) {
     if (map[t.date]) {

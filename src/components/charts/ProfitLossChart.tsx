@@ -19,6 +19,7 @@ export function ProfitLossChart({ data = [] }: ProfitLossChartProps) {
           fontSize={12}
         />
         <Tooltip
+          formatter={(value: any) => [`₹${Number(value || 0).toLocaleString()}`, '']}
           contentStyle={{
             backgroundColor: 'hsl(var(--card))',
             border: '1px solid hsl(var(--border))',
@@ -29,9 +30,9 @@ export function ProfitLossChart({ data = [] }: ProfitLossChartProps) {
         <Line
           type="monotone"
           dataKey="profit"
-          stroke="hsl(var(--primary))"
+          stroke="#0ea5e9"
           strokeWidth={3}
-          dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
+          dot={{ fill: '#0ea5e9', strokeWidth: 2, r: 4 }}
           name="Profit (₹)"
         />
       </LineChart>

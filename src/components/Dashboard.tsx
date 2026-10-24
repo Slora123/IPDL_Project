@@ -1,12 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 import api from "@/lib/api";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, IndianRupee, BarChart3 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TrendingUp, TrendingDown, IndianRupee, BarChart3, PlusCircle } from "lucide-react";
 import { IncomeExpenseChart } from "./charts/IncomeExpenseChart";
 import { ProfitLossChart } from "./charts/ProfitLossChart";
 import { CategoryChart } from "./charts/CategoryChart";
 import { VoiceButton } from "./VoiceButton";
 import { StatsCard } from "./StatsCard";
+import { ManualTransactionDialog } from "./ManualTransactionDialog";
 import { useI18n } from "@/contexts/I18nContext";
 import { usePreferences } from "@/contexts/PreferencesContext";
 
@@ -31,13 +33,19 @@ export function Dashboard() {
   const [categoryData, setCategoryData] = useState<any[]>([]);
   const [recentTransactions, setRecentTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isManualDialogOpen, setIsManualDialogOpen] = useState(false);
 
   const fetchStats = useCallback(async () => {
     setLoading(true);
     try {
+      const clientToday = (() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      })();
+
       const [statsRes, weeklyRes, categoryRes] = await Promise.all([
-        api.get('/api/stats'),
-        api.get('/api/analytics/weekly-stats'),
+        api.get('/api/stats', { params: { date: clientToday } }),
+        api.get('/api/analytics/weekly-stats', { params: { date: clientToday } }),
         api.get('/api/analytics/spending'),
       ]);
 
@@ -69,7 +77,17 @@ export function Dashboard() {
     }
   }, []);
 
-  useEffect(() => { fetchStats(); }, [fetchStats]);
+  useEffect(() => {
+    fetchStats();
+
+    const handleSaved = () => {
+      fetchStats();
+    };
+    window.addEventListener('trackify:transaction-saved', handleSaved);
+    return () => {
+      window.removeEventListener('trackify:transaction-saved', handleSaved);
+    };
+  }, [fetchStats]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background to-muted/20">
@@ -82,6 +100,13 @@ export function Dashboard() {
             </h1>
             <p className="text-muted-foreground">{t("subheader_today", "dashboard")}</p>
           </div>
+          <Button
+            onClick={() => setIsManualDialogOpen(true)}
+            className="bg-gradient-primary flex items-center gap-2 shadow-sm hover:opacity-95"
+          >
+            <PlusCircle className="h-4 w-4" />
+            <span>{t("add_manual", "dashboard")}</span>
+          </Button>
         </div>
 
         {/* Stats Cards */}
@@ -165,26 +190,33 @@ export function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {recentTransactions.map((transaction) => (
-                  <div
-                    key={transaction.id}
-                    className="flex items-center justify-between p-3 rounded-lg bg-muted/50 gap-2"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="font-medium truncate" title={transaction.item}>{transaction.item}</p>
-                      <p className="text-sm text-muted-foreground">{transaction.date} · {transaction.time}</p>
-                    </div>
-                    <div className={`text-right shrink-0 ${transaction.type === 'income' ? 'text-success' : 'text-destructive'
-                      }`}>
-                      <p className="font-semibold">
-                        {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount}
-                      </p>
-                      <p className="text-xs">
-                        {transaction.type === 'income' ? t("income", "dashboard") : t("expense", "dashboard")}
-                      </p>
-                    </div>
+                {recentTransactions.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <p className="text-sm font-medium">No transactions recorded yet.</p>
+                    <p className="text-xs mt-1">Tap <strong>+ Add Manual</strong> or use the microphone to add your first transaction!</p>
                   </div>
-                ))}
+                ) : (
+                  recentTransactions.map((transaction) => (
+                    <div
+                      key={transaction.id}
+                      className="flex items-center justify-between p-3 rounded-lg bg-muted/50 gap-2"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="font-medium truncate" title={transaction.item}>{transaction.item}</p>
+                        <p className="text-sm text-muted-foreground">{transaction.date} · {transaction.time}</p>
+                      </div>
+                      <div className={`text-right shrink-0 ${transaction.type === 'income' ? 'text-success' : 'text-destructive'
+                        }`}>
+                        <p className="font-semibold">
+                          {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount}
+                        </p>
+                        <p className="text-xs">
+                          {transaction.type === 'income' ? t("income", "dashboard") : t("expense", "dashboard")}
+                        </p>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -210,6 +242,13 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Manual Transaction Dialog */}
+      <ManualTransactionDialog
+        open={isManualDialogOpen}
+        onOpenChange={setIsManualDialogOpen}
+        onSuccess={fetchStats}
+      />
 
       {/* Floating Voice Button — refreshes dashboard on save */}
       <VoiceButton onTransactionSaved={fetchStats} />

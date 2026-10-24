@@ -74,12 +74,17 @@ export default function Transactions() {
 
   useEffect(() => {
     fetchTransactions();
+
+    const handleSaved = () => fetchTransactions();
+    window.addEventListener('trackify:transaction-saved', handleSaved);
+    return () => window.removeEventListener('trackify:transaction-saved', handleSaved);
   }, []);
 
   const handleDelete = async (id: string) => {
     try {
       await api.delete(`/api/transactions/${id}`);
       setTransactions(transactions.filter(t => t.id !== id));
+      window.dispatchEvent(new CustomEvent('trackify:transaction-saved'));
     } catch (error) {
       console.error('Error deleting transaction:', error);
     }

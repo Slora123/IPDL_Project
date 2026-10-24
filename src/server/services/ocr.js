@@ -72,47 +72,85 @@ Rules:
 - If quantity is missing, use 1. If unitPrice is missing, compute it from totalPrice/quantity.
 - If it is NOT a bill, set isBill=false and transaction can be null.`;
 
-  let r;
-  try {
-    r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_KEY}`,
-      {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              { text: prompt },
-              { inlineData: { mimeType, data: buf.toString('base64') } }
-            ]
-          }],
-          generationConfig: {
-            // Request JSON output — gemini-1.5-flash supports this without a schema
-            responseMimeType: 'application/json',
-            temperature: 0.1,
-          }
-        })
+  const candidateModels = [
+    GEMINI_MODEL,
+    'gemini-3.5-flash-lite',
+    'gemini-3.5-flash',
+    'gemini-2.5-flash-lite',
+    'gemini-2.5-flash',
+  ].filter((m, i, arr) => m && arr.indexOf(m) === i);
+
+  let out = null;
+  let lastError = null;
+  let successfulModel = null;
+
+  for (const modelName of candidateModels) {
+    try {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${GEMINI_KEY}`,
+        {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          signal: AbortSignal.timeout(GEMINI_TIMEOUT_MS),
+          body: JSON.stringify({
+            contents: [{
+              parts: [
+                { text: prompt },
+                { inlineData: { mimeType, data: buf.toString('base64') } }
+              ]
+            }],
+            generationConfig: {
+              responseMimeType: 'application/json',
+              temperature: 0.1,
+            }
+          })
+        }
+      );
+
+      if (!r.ok) {
+        const errBody = await r.text().catch(() => '');
+        console.warn(`[OCR] Model ${modelName} returned HTTP ${r.status}:`, errBody.slice(0, 150));
+        const statusErr = Object.assign(new Error(`Gemini returned HTTP ${r.status}.`), {
+          code: `GEMINI_HTTP_${r.status}`,
+          status: r.status === 429 ? 429 : 503,
+        });
+        lastError = statusErr;
+
+        // On quota (429), not found (404), or transient service busy (503), try next model
+        if (r.status === 429 || r.status === 404 || r.status === 503) {
+          continue;
+        }
+        throw statusErr;
       }
-    );
-  } catch (error) {
-    const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
-    throw Object.assign(new Error(timedOut ? 'Gemini request timed out.' : 'Gemini could not be reached.'), {
-      code: timedOut ? 'GEMINI_REQUEST_TIMEOUT' : 'GEMINI_NETWORK_ERROR',
-      status: timedOut ? 504 : 502,
-    });
+
+      out = await r.json();
+      successfulModel = modelName;
+      if (modelName !== GEMINI_MODEL) {
+        console.log(`[OCR] Successfully scanned bill using fallback model: ${modelName}`);
+      }
+      break;
+    } catch (error) {
+      lastError = error;
+      if (error?.code?.startsWith('GEMINI_HTTP_') && (error.code === 'GEMINI_HTTP_429' || error.code === 'GEMINI_HTTP_404' || error.code === 'GEMINI_HTTP_503')) {
+        continue;
+      }
+      const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
+      const networkErr = Object.assign(new Error(timedOut ? 'Gemini request timed out.' : 'Gemini could not be reached.'), {
+        code: timedOut ? 'GEMINI_REQUEST_TIMEOUT' : 'GEMINI_NETWORK_ERROR',
+        status: timedOut ? 504 : 502,
+      });
+      lastError = networkErr;
+      console.warn(`[OCR] Model ${modelName} network/timeout error, trying fallback...`);
+    }
   }
 
-  if (!r.ok) {
-    const errBody = await r.text().catch(() => '');
-    console.error('[OCR] Gemini error response:', r.status, errBody.slice(0, 300));
-    throw Object.assign(new Error(`Gemini returned HTTP ${r.status}.`), {
-      code: `GEMINI_HTTP_${r.status}`,
-      status: 503,
+  if (!out) {
+    if (lastError) throw lastError;
+    throw Object.assign(new Error('Failed to analyze bill with any AI model.'), {
+      code: 'GEMINI_ALL_MODELS_FAILED',
+      status: 502,
     });
   }
-
-  const out = await r.json();
   const rawText = out?.candidates?.[0]?.content?.parts?.[0]?.text;
   if (!rawText) {
     console.error('[OCR] Unexpected Gemini response shape:', JSON.stringify(out).slice(0, 500));

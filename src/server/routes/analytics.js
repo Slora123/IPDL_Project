@@ -13,7 +13,8 @@ router.use(requireAuth);
 // GET /api/analytics/weekly-stats
 router.get('/weekly-stats', async (req, res) => {
   try {
-    res.json(await getWeeklyStats(req.user.id));
+    const clientDate = req.query.date || req.headers['x-client-date'];
+    res.json(await getWeeklyStats(req.user.id, clientDate));
   } catch (e) {
     console.error(e);
     res.status(500).json({ error: 'Failed to fetch weekly stats' });

@@ -84,6 +84,7 @@ export function EditTransactionDialog({
             );
 
             console.log("Transaction updated:", response.data);
+            window.dispatchEvent(new CustomEvent('trackify:transaction-saved', { detail: response.data }));
             onSuccess();
             onOpenChange(false);
         } catch (error: any) {

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import api from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
 import {
     Dialog,
     DialogContent,
@@ -25,38 +26,60 @@ interface ManualTransactionDialogProps {
     onSuccess: () => void;
 }
 
+const getTodayDateStr = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
 export function ManualTransactionDialog({
     open,
     onOpenChange,
     onSuccess,
 }: ManualTransactionDialogProps) {
+    const { toast } = useToast();
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState({
         item: "",
         amount: "",
         type: "expense",
         category: "General",
-        date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
+        date: getTodayDateStr(),
         language: "english",
     });
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        const amt = parseFloat(formData.amount);
+        if (isNaN(amt) || amt <= 0) {
+            toast({
+                title: "Invalid Amount",
+                description: "Please enter a valid positive amount.",
+                variant: "destructive"
+            });
+            return;
+        }
+
         setLoading(true);
 
         try {
-            console.log("Submitting transaction:", { ...formData, amount: parseFloat(formData.amount) });
+            const finalDate = formData.date || getTodayDateStr();
+            const payload = {
+                ...formData,
+                date: finalDate,
+                amount: amt,
+                voiceInput: null,
+            };
 
-            const response = await api.post(
-                '/api/transactions',
-                {
-                    ...formData,
-                    amount: parseFloat(formData.amount),
-                    voiceInput: null, // Explicitly null for manual entry
-                }
-            );
+            const response = await api.post('/api/transactions', payload);
 
-            console.log("Transaction created:", response.data);
+            // Notify all listening components (Dashboard, Transactions, etc.)
+            window.dispatchEvent(new CustomEvent('trackify:transaction-saved', { detail: response.data }));
+
+            toast({
+                title: "Transaction Saved",
+                description: `${formData.type === 'income' ? 'Income' : 'Expense'} of ₹${amt.toLocaleString()} added successfully.`,
+            });
+
             onSuccess();
             onOpenChange(false);
             setFormData({
@@ -64,13 +87,17 @@ export function ManualTransactionDialog({
                 amount: "",
                 type: "expense",
                 category: "General",
-                date: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })(),
+                date: getTodayDateStr(),
                 language: "english",
             });
         } catch (error: any) {
             console.error("Error creating transaction:", error);
-            console.error("Response data:", error.response?.data);
-            alert(`Failed to add transaction: ${error.response?.data?.error || error.message}`);
+            const msg = error.response?.data?.error || error.message || "Failed to add transaction.";
+            toast({
+                title: "Error Adding Transaction",
+                description: msg,
+                variant: "destructive"
+            });
         } finally {
             setLoading(false);
         }
