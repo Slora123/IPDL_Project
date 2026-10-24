@@ -2,13 +2,14 @@
 // Manages JWT-based authentication state.
 // Token is stored in localStorage under 'trackify_token'.
 // On mount, the token is validated against GET /api/auth/me.
-//
-// IMPORTANT: This context is the single source of truth for the authenticated user's
-// profile (name, email, businessName, phone). It populates PreferencesContext on
-// login/register and clears it on logout to prevent stale data across account switches.
 
 import React, {
-  createContext, useCallback, useContext, useEffect, useMemo, useState,
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
 } from 'react';
 import api from '@/lib/api';
 import { usePreferences } from './PreferencesContext';
@@ -26,140 +27,272 @@ export interface AuthUser {
 interface AuthState {
   user: AuthUser | null;
   token: string | null;
-  /** true while the initial /me check is running */
   loading: boolean;
   isAuthenticated: boolean;
 }
 
 interface AuthContextValue extends AuthState {
-  login:    (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string, businessName?: string, phone?: string) => Promise<void>;
-  logout:   () => void;
+  login: (
+    email: string,
+    password: string
+  ) => Promise<void>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    businessName?: string,
+    phone?: string
+  ) => Promise<void>;
+  logout: () => void;
 }
 
 const TOKEN_KEY = 'trackify_token';
 
-// ── Context ──────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-// ── Inner provider that has access to PreferencesContext ─────────────────────
-const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user,    setUser]    = useState<AuthUser | null>(null);
-  const [token,   setToken]   = useState<string | null>(() => localStorage.getItem(TOKEN_KEY));
+// ── Inner provider ──────────────────────────────────────────────────────────
+const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [token, setToken] = useState<string | null>(
+    () => localStorage.getItem(TOKEN_KEY)
+  );
   const [loading, setLoading] = useState(true);
 
-  const { setName, setBusinessName, setPhone, resetPreferences, language, setLanguage } = usePreferences();
+  const {
+    setName,
+    setBusinessName,
+    setPhone,
+    resetPreferences,
+  } = usePreferences();
 
-  // Helper: sync user profile into PreferencesContext
-  // Only overwrites fields that have a real value from the server —
-  // never overwrites with empty string or undefined.
-  const syncUserToPrefs = useCallback((u: AuthUser) => {
-    if (u.name)         setName(u.name);
-    if (u.businessName) setBusinessName(u.businessName);
-    if (u.phone)        setPhone(u.phone);
-    // Language is NOT overwritten from the server — the user chose it on the auth form.
-  }, [setName, setBusinessName, setPhone]);
+  // Sync the authenticated user's profile into preferences.
+  const syncUserToPrefs = useCallback(
+    (u: AuthUser) => {
+      if (u.name) setName(u.name);
+      if (u.businessName) setBusinessName(u.businessName);
+      if (u.phone) setPhone(u.phone);
+    },
+    [setName, setBusinessName, setPhone]
+  );
 
-  // Attach / remove Authorization header whenever the token changes
+  // Keep the API authorization header and stored token synchronized.
   useEffect(() => {
     if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       localStorage.setItem(TOKEN_KEY, token);
+      api.defaults.headers.common['Authorization'] = `Bearer ${token} `;
     } else {
-      delete api.defaults.headers.common['Authorization'];
       localStorage.removeItem(TOKEN_KEY);
+      delete api.defaults.headers.common['Authorization'];
     }
   }, [token]);
 
-  // On mount, verify any stored token with the backend
+  // Restore and validate an existing session.
   useEffect(() => {
-    const stored = localStorage.getItem(TOKEN_KEY);
-    if (!stored) { setLoading(false); return; }
+    let active = true;
 
-    api.defaults.headers.common['Authorization'] = `Bearer ${stored}`;
-    api.get<{ user: AuthUser }>('/api/auth/me')
-      .then(({ data }) => {
+    const initializeAuth = async () => {
+      const storedToken = localStorage.getItem(TOKEN_KEY);
+
+      if (!storedToken) {
+        if (active) {
+          setUser(null);
+          setToken(null);
+          setLoading(false);
+        }
+        return;
+      }
+
+      // Set the header before requesting the current user.
+      api.defaults.headers.common['Authorization'] =
+        `Bearer ${storedToken} `;
+
+      try {
+        const { data } = await api.get<{ user: AuthUser }>(
+          '/api/auth/me'
+        );
+
+        if (!active) return;
+
+        if (!data?.user) {
+          throw new Error('The session response did not contain a user.');
+        }
+
         setUser(data.user);
-        setToken(stored);
-        // Sync the verified user's profile into PreferencesContext so
-        // Settings always shows the correct user's data after a refresh.
+        setToken(storedToken);
         syncUserToPrefs(data.user);
-      })
-      .catch(() => {
-        // Token expired or invalid — clear everything
-        localStorage.removeItem(TOKEN_KEY);
-        delete api.defaults.headers.common['Authorization'];
-        setToken(null);
-        setUser(null);
-        resetPreferences();
-      })
-      .finally(() => setLoading(false));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+      } catch (error: unknown) {
+        if (!active) return;
 
-  // ── Actions ──────────────────────────────────────────────────────────────
-  const login = useCallback(async (email: string, password: string) => {
-    const { data } = await api.post<{ user: AuthUser; token: string }>(
-      '/api/auth/login', { email, password }
-    );
-    setToken(data.token);
-    setUser(data.user);
-    // ── BUG 1 FIX: Populate PreferencesContext from the server response ──
-    // This replaces any stale data from the previous account.
-    syncUserToPrefs(data.user);
-  }, [syncUserToPrefs]);
+        const status = (
+          error as { response?: { status?: number } }
+        )?.response?.status;
 
-  const register = useCallback(async (
-    name: string, email: string, password: string,
-    businessName = '', phone = ''
-  ) => {
-    const { data } = await api.post<{ user: AuthUser; token: string }>(
-      '/api/auth/register', { name, email, password, businessName, phone }
-    );
-    setToken(data.token);
-    setUser(data.user);
-    // Sync newly-created user's server-confirmed profile into prefs
-    syncUserToPrefs(data.user);
-  }, [syncUserToPrefs]);
+        if (status === 401 || status === 403) {
+          // Clear the session only when the server explicitly rejects it.
+          localStorage.removeItem(TOKEN_KEY);
+          delete api.defaults.headers.common['Authorization'];
+          setToken(null);
+          setUser(null);
+          resetPreferences();
+        } else {
+          // Network/server failures do not prove the token is invalid.
+          // Keep the token, but do not mark the user as authenticated
+          // without a verified user object.
+          console.error(
+            'Could not verify the existing session. Please retry:',
+            error
+          );
+          setUser(null);
+        }
+      } finally {
+        if (active) setLoading(false);
+      }
+    };
 
+    void initializeAuth();
+
+    return () => {
+      active = false;
+    };
+  }, [resetPreferences, syncUserToPrefs]);
+
+  // ── Login ─────────────────────────────────────────────────────────────────
+  const login = useCallback(
+    async (email: string, password: string): Promise<void> => {
+      const { data } = await api.post<{
+        user: AuthUser;
+        token: string;
+      }>('/api/auth/login', { email, password });
+
+      if (!data?.token || !data?.user) {
+        throw new Error(
+          'Login response is missing the user or authentication token.'
+        );
+      }
+
+      // Persist the token before updating authenticated state.
+      localStorage.setItem(TOKEN_KEY, data.token);
+      api.defaults.headers.common['Authorization'] =
+        `Bearer ${data.token} `;
+
+      setToken(data.token);
+      setUser(data.user);
+      syncUserToPrefs(data.user);
+      setLoading(false);
+    },
+    [syncUserToPrefs]
+  );
+
+  // ── Registration ─────────────────────────────────────────────────────────
+  const register = useCallback(
+    async (
+      name: string,
+      email: string,
+      password: string,
+      businessName = '',
+      phone = ''
+    ): Promise<void> => {
+      const { data } = await api.post<{
+        user: AuthUser;
+        token: string;
+      }>('/api/auth/register', {
+        name,
+        email,
+        password,
+        businessName,
+        phone,
+      });
+
+      if (!data?.token || !data?.user) {
+        throw new Error(
+          'Registration response is missing the user or authentication token.'
+        );
+      }
+
+      localStorage.setItem(TOKEN_KEY, data.token);
+      api.defaults.headers.common['Authorization'] =
+        `Bearer ${data.token} `;
+
+      setToken(data.token);
+      setUser(data.user);
+      syncUserToPrefs(data.user);
+      setLoading(false);
+    },
+    [syncUserToPrefs]
+  );
+
+  // ── Logout ────────────────────────────────────────────────────────────────
   const logout = useCallback(() => {
+    localStorage.removeItem(TOKEN_KEY);
+    delete api.defaults.headers.common['Authorization'];
+
     setUser(null);
     setToken(null);
-    // ── BUG 1 FIX: Clear all user-specific preference data on logout ────
-    // Without this, the next login shows the previous user's cached name/phone.
+    setLoading(false);
     resetPreferences();
-    // Header cleared by the token effect above
   }, [resetPreferences]);
 
-  // Listen for session-expired events dispatched by the api interceptor
+  // Handle session expiration reported by the API interceptor.
   useEffect(() => {
-    const handler = () => {
+    const handleSessionExpired = () => {
+      localStorage.removeItem(TOKEN_KEY);
+      delete api.defaults.headers.common['Authorization'];
+
       setUser(null);
       setToken(null);
+      setLoading(false);
       resetPreferences();
     };
-    window.addEventListener('trackify:session-expired', handler);
-    return () => window.removeEventListener('trackify:session-expired', handler);
+
+    window.addEventListener(
+      'trackify:session-expired',
+      handleSessionExpired
+    );
+
+    return () => {
+      window.removeEventListener(
+        'trackify:session-expired',
+        handleSessionExpired
+      );
+    };
   }, [resetPreferences]);
 
-  const value = useMemo<AuthContextValue>(() => ({
-    user, token, loading,
-    isAuthenticated: !!user,
-    login, register, logout,
-  }), [user, token, loading, login, register, logout]);
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      token,
+      loading,
+      isAuthenticated: Boolean(user),
+      login,
+      register,
+      logout,
+    }),
+    [user, token, loading, login, register, logout]
+  );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
-// ── Public Provider ───────────────────────────────────────────────────────────
-// AuthProvider must be inside PreferencesProvider so it can access usePreferences.
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  return <AuthProviderInner>{children}</AuthProviderInner>;
-};
+// AuthProvider must be inside PreferencesProvider.
+export const AuthProvider: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => (
+  <AuthProviderInner>{children}</AuthProviderInner>
+);
 
-// ── Hook ─────────────────────────────────────────────────────────────────────
+// ── Hook ────────────────────────────────────────────────────────────────────
 export const useAuth = (): AuthContextValue => {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+  const context = useContext(AuthContext);
+
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+
+  return context;
 };
