@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@google/genai": "^1.47.0",
+    "@google/generative-ai": "^0.24.1",
     "@hookform/resolvers": "^3.10.0",
     "@libsql/client": "^0.18.0",
     "@prisma/client": "^7.6.0",
