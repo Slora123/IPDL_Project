@@ -34,7 +34,7 @@ const NAV_KEYS = {
   scanBill: "Scan Bill",
   trending: "Trending",
   reports: "Reports",
-  financialTips: "Financial Tips",
+  financialTips: "Financial Knowledge",
   growthInsights: "Growth Insights",
   settings: "Settings",
   help: "Help",

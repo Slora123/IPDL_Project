@@ -2,42 +2,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { usePreferences } from "@/contexts/PreferencesContext";
 import { useI18n } from "@/contexts/I18nContext";
 import { useState } from "react";
 import {
   BookOpen,
   Play,
-  ExternalLink,
   Star,
   Clock,
   Users,
-  TrendingUp,
-  PiggyBank,
-  Calculator,
-  Target,
-  Award,
-  CheckCircle
+  GraduationCap,
+  Video,
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
 
 export default function Learn() {
-  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("courses");
   const [playingVideoId, setPlayingVideoId] = useState<string | null>(null);
-  const [showProgress, setShowProgress] = useState(false);
   const { language } = usePreferences();
   const { t } = useI18n();
   const isEnglish = language === 'en';
-
-  const handleFeatureNotReady = (featureName: string) => {
-    toast({
-      title: "Feature coming soon",
-      description: `${featureName} is currently under development.`,
-    });
-  };
 
   const courses = [
     {
@@ -70,45 +54,6 @@ export default function Learn() {
     }
   ];
 
-  const tips = [
-    {
-      category: "Daily Management",
-      categoryHindi: "दैनिक प्रबंधन",
-      tips: [
-        {
-          title: "Record Every Transaction",
-          titleHindi: "हर लेन-देन दर्ज करें",
-          content: "Use voice commands to quickly record all income and expenses. This ensures accuracy and saves time.",
-          contentHindi: "सभी आय और व्यय को तुरंत रिकॉर्ड करने के लिए वॉयस कमांड का उपयोग करें।"
-        },
-        {
-          title: "Check Daily Summary",
-          titleHindi: "दैनिक सारांश देखें",
-          content: "Review your daily profit/loss before closing. Identify patterns and opportunities.",
-          contentHindi: "दुकान बंद करने से पहले दैनिक लाभ-हानि की समीक्षा करें।"
-        }
-      ]
-    },
-    {
-      category: "Growth Strategy",
-      categoryHindi: "विकास रणनीति",
-      tips: [
-        {
-          title: "Track Peak Hours",
-          titleHindi: "व्यस्त समय को ट्रैक करें",
-          content: "Use analytics to identify your busiest sales hours and optimize inventory accordingly.",
-          contentHindi: "अपने सबसे व्यस्त बिक्री घंटों की पहचान करें और उसी अनुसार इन्वेंट्री को अनुकूलित करें।"
-        },
-        {
-          title: "Focus on High-Margin Items",
-          titleHindi: "उच्च मार्जिन वाली वस्तुओं पर ध्यान दें",
-          content: "Promote products that give you better profit margins while maintaining customer satisfaction.",
-          contentHindi: "ग्राहकों की संतुष्टि बनाए रखते हुए बेहतर लाभ मार्जिन देने वाले उत्पादों को बढ़ावा दें।"
-        }
-      ]
-    }
-  ];
-
   const videos = [
     {
       title: "Finance For Beginners",
@@ -136,63 +81,27 @@ export default function Learn() {
     }
   ];
 
-  const achievements = [
-    { name: "First Week Complete", icon: CheckCircle, earned: true },
-    { name: "Voice Expert", icon: Award, earned: true },
-    { name: "Analytics Pro", icon: TrendingUp, earned: false },
-    { name: "Profit Master", icon: Target, earned: false }
-  ];
-
   return (
     <div className="w-full max-w-7xl mx-auto p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{t('title', 'learn', 'Learning Center')}</h1>
+          <h1 className="text-3xl font-bold">{t('title', 'learn', 'Financial Knowledge')}</h1>
           <p className="text-muted-foreground">
-            {t('subtitle', 'learn', 'Improve your business skills with our courses and tips')}
+            {t('subtitle', 'learn', 'Master financial management with video courses and tutorials')}
           </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => setShowProgress(true)}>
-            <Star className="mr-2 h-4 w-4" />
-            {t('status', 'common', 'My Progress')}
-          </Button>
         </div>
       </div>
 
-      {/* Achievement Badges */}
-      <Card className="shadow-card">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Award className="h-5 w-5 text-warning" />
-            {t('success', 'common', 'Your Achievements')}
-          </CardTitle>
-          <CardDescription>{t('subtitle', 'learn', 'Track your learning progress')}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {achievements.map((achievement, index) => (
-              <div
-                key={index}
-                className={`p-3 rounded-lg text-center border-2 transition-all ${achievement.earned
-                  ? 'bg-success/10 border-success/20 text-success'
-                  : 'bg-muted/50 border-muted text-muted-foreground'
-                  }`}
-              >
-                <achievement.icon className="h-8 w-8 mx-auto mb-2" />
-                <p className="text-sm font-medium">{achievement.name}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto gap-2 p-1">
-          <TabsTrigger value="courses">{t('learn_grow', 'common', 'Courses')}</TabsTrigger>
-          <TabsTrigger value="tips">{t('tips_header', 'learn', 'Daily Tips')}</TabsTrigger>
-          <TabsTrigger value="videos">{t('voice_recorded', 'transactions', 'Video Tutorials')}</TabsTrigger>
-          <TabsTrigger value="resources">{t('data_title', 'settings', 'Resources')}</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 max-w-md h-auto gap-2 p-1">
+          <TabsTrigger value="courses" className="flex items-center gap-2 py-2">
+            <GraduationCap className="h-4 w-4" />
+            {t('learn_grow', 'common', 'Courses')}
+          </TabsTrigger>
+          <TabsTrigger value="videos" className="flex items-center gap-2 py-2">
+            <Video className="h-4 w-4" />
+            {t('voice_recorded', 'transactions', 'Video Tutorials')}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="courses" className="space-y-4">
@@ -242,24 +151,6 @@ export default function Learn() {
           </div>
         </TabsContent>
 
-        <TabsContent value="tips" className="space-y-6">
-          {tips.map((tipCategory, index) => (
-            <Card key={index} className="shadow-card">
-              <CardHeader>
-                <CardTitle>{isEnglish ? tipCategory.category : tipCategory.categoryHindi}</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {tipCategory.tips.map((tip, tipIndex) => (
-                  <div key={tipIndex} className="p-4 bg-muted/50 rounded-lg">
-                    <h4 className="font-medium mb-1">{isEnglish ? tip.title : tip.titleHindi}</h4>
-                    <p className="text-sm mb-1">{isEnglish ? tip.content : tip.contentHindi}</p>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          ))}
-        </TabsContent>
-
         <TabsContent value="videos" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {videos.map((video, index) => (
@@ -296,82 +187,7 @@ export default function Learn() {
             ))}
           </div>
         </TabsContent>
-
-        <TabsContent value="resources" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calculator className="h-5 w-5" />
-                  Business Calculators
-                </CardTitle>
-                <CardDescription>Financial tools to help your business</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start" onClick={() => handleFeatureNotReady('Profit Margin Calculator')}>
-                  <PiggyBank className="mr-2 h-4 w-4" />
-                  Profit Margin Calculator
-                </Button>
-                <Button variant="outline" className="w-full justify-start" onClick={() => handleFeatureNotReady('Break-even Analysis')}>
-                  <TrendingUp className="mr-2 h-4 w-4" />
-                  Break-even Analysis
-                </Button>
-                <Button variant="outline" className="w-full justify-start" onClick={() => handleFeatureNotReady('ROI Calculator')}>
-                  <Target className="mr-2 h-4 w-4" />
-                  ROI Calculator
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ExternalLink className="h-5 w-5" />
-                  External Resources
-                </CardTitle>
-                <CardDescription>Helpful links and references</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-between" onClick={() => handleFeatureNotReady('Government Schemes Directory')}>
-                  Government Schemes for SMEs
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" className="w-full justify-between" onClick={() => handleFeatureNotReady('GST Registration Guide')}>
-                  GST Registration Guide
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" className="w-full justify-between" onClick={() => handleFeatureNotReady('Digital India Resources')}>
-                  Digital India Resources
-                  <ExternalLink className="h-4 w-4" />
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
       </Tabs>
-
-      {/* Study Plan */}
-      <Card className="shadow-card bg-gradient-card">
-        <CardHeader>
-          <CardTitle>💡 Your Weekly Study Plan</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-medium mb-2">This Week's Focus</h4>
-              <p className="text-sm text-muted-foreground">
-                Complete "Small Business Financial Management" course and practice voice commands daily.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2">Next Week's Goal</h4>
-              <p className="text-sm text-muted-foreground">
-                Master profit calculation methods and start GST planning course.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Video Player Modal */}
       <Dialog open={!!playingVideoId} onOpenChange={(open) => !open && setPlayingVideoId(null)}>
@@ -388,50 +204,6 @@ export default function Learn() {
                 allowFullScreen
               ></iframe>
             )}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Progress Modal */}
-      <Dialog open={showProgress} onOpenChange={setShowProgress}>
-        <DialogContent className="sm:max-w-[500px] bg-white dark:bg-slate-950 border border-border/50">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-2xl">
-              <Star className="h-6 w-6 text-yellow-500 fill-yellow-500" />
-              My Learning Progress
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-6 py-4">
-            <div>
-              <p className="text-muted-foreground mb-4">
-                You're doing great! You have learned how to use voice commands to record transactions 
-                and are making good progress on basic profit calculation methods.
-              </p>
-            </div>
-            
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">Small Business Financial Management</h4>
-                  <span className="text-sm text-success font-medium">100%</span>
-                </div>
-                <Progress value={100} className="h-2 bg-muted" />
-                <p className="text-xs text-muted-foreground mt-2">
-                  Completed! You earned the "Voice Expert" and "First Week Complete" badges.
-                </p>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <h4 className="font-medium">Digital Growth for Retailers</h4>
-                  <span className="text-sm font-medium">45%</span>
-                </div>
-                <Progress value={45} className="h-2 bg-muted" />
-                <p className="text-xs text-muted-foreground mt-2">
-                  In progress (2h 15m remaining). Keep it up!
-                </p>
-              </div>
-            </div>
           </div>
         </DialogContent>
       </Dialog>

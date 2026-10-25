@@ -23,6 +23,8 @@ import { usePreferences } from "@/contexts/PreferencesContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useI18n } from "@/contexts/I18nContext";
 import api from "@/lib/api";
+// @ts-ignore
+import html2pdf from "html2pdf.js";
 
 export default function Settings() {
   const { name, businessName, phone, language, setName, setBusinessName, setPhone, setLanguage } = usePreferences();
@@ -120,11 +122,85 @@ export default function Settings() {
     }
   };
 
-  const handleExportData = () => {
-    toast({
-      title: "Data Export Started",
-      description: "Your business data export will be ready in a few minutes.",
-    });
+  const handleExportData = async () => {
+    try {
+      toast({
+        title: "Exporting Data",
+        description: "Preparing your business transactions report as PDF...",
+      });
+      const res = await api.get('/api/transactions');
+      const txs = Array.isArray(res.data) ? res.data : [];
+
+      const printContainer = document.createElement('div');
+      printContainer.style.padding = '24px';
+      printContainer.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+      printContainer.style.color = '#111827';
+      printContainer.style.backgroundColor = '#ffffff';
+
+      printContainer.innerHTML = `
+        <div style="border-bottom: 2px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 20px;">
+          <h1 style="font-size: 24px; font-weight: bold; margin: 0; color: #1e3a8a;">Trackify Business Account Export</h1>
+          <p style="font-size: 13px; color: #6b7280; margin: 4px 0 0 0;">
+            Business: ${businessName || 'Trackify'} | Owner: ${name || 'User'} | Email: ${user?.email || '—'}
+          </p>
+          <p style="font-size: 12px; color: #6b7280; margin: 2px 0 0 0;">
+            Export Date: ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+          </p>
+        </div>
+
+        <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px;">Transactions Record (${txs.length} total)</h3>
+        <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+          <thead>
+            <tr style="background-color: #f3f4f6; text-align: left; border-bottom: 2px solid #e5e7eb;">
+              <th style="padding: 8px 10px;">Date</th>
+              <th style="padding: 8px 10px;">Item</th>
+              <th style="padding: 8px 10px;">Category</th>
+              <th style="padding: 8px 10px;">Type</th>
+              <th style="padding: 8px 10px; text-align: right;">Amount (₹)</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${txs.slice(0, 50).map((t: any, i: number) => `
+              <tr style="border-bottom: 1px solid #e5e7eb; background-color: ${i % 2 === 0 ? '#ffffff' : '#f9fafb'};">
+                <td style="padding: 6px 10px;">${t.date} ${t.time || ''}</td>
+                <td style="padding: 6px 10px; font-weight: 500;">${t.item}</td>
+                <td style="padding: 6px 10px;">${t.category}</td>
+                <td style="padding: 6px 10px; text-transform: capitalize;">${t.type}</td>
+                <td style="padding: 6px 10px; text-align: right; font-weight: bold; color: ${t.type === 'income' ? '#15803d' : '#dc2626'};">
+                  ${t.type === 'income' ? '+' : '-'}₹${Number(t.amount || 0).toLocaleString()}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+
+      document.body.appendChild(printContainer);
+      const opt = {
+        margin: [0.4, 0.4, 0.4, 0.4],
+        filename: `Trackify_Account_Data_${new Date().toISOString().split('T')[0]}.pdf`,
+        image: { type: 'jpeg' as const, quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true },
+        jsPDF: { unit: 'in' as const, format: 'a4' as const, orientation: 'portrait' as const }
+      };
+
+      await html2pdf().set(opt).from(printContainer).save();
+      if (document.body.contains(printContainer)) {
+        document.body.removeChild(printContainer);
+      }
+
+      toast({
+        title: "Export Complete!",
+        description: "Your business data PDF has been downloaded.",
+      });
+    } catch (err: any) {
+      console.error('Export error:', err);
+      toast({
+        variant: "destructive",
+        title: "Export Failed",
+        description: err.message || "Could not export business data.",
+      });
+    }
   };
 
   const handleResetVoice = () => {
@@ -471,9 +547,9 @@ export default function Settings() {
                   <div className="flex items-start gap-3">
                     <Download className="h-5 w-5 mt-1" />
                     <div className="text-left">
-                      <div className="font-medium">Export Data</div>
+                      <div className="font-medium">Export Data (PDF)</div>
                       <div className="text-sm text-muted-foreground">
-                        Download all your transactions and reports
+                        Download all your transactions and account data as PDF
                       </div>
                     </div>
                   </div>

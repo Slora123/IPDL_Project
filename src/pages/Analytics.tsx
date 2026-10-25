@@ -26,6 +26,7 @@ import { IncomeExpenseChart } from "@/components/charts/IncomeExpenseChart";
 import { ProfitLossChart } from "@/components/charts/ProfitLossChart";
 import { CategoryChart } from "@/components/charts/CategoryChart";
 import { useI18n } from "@/contexts/I18nContext";
+import { useToast } from "@/hooks/use-toast";
 import api from "@/lib/api";
 // @ts-ignore
 import html2pdf from "html2pdf.js";
@@ -120,17 +121,23 @@ export default function Analytics() {
     );
   }
 
+  const { toast } = useToast();
+
   const handleExportPDF = () => {
     const element = document.getElementById('analytics-content');
     if (element) {
       const opt = {
-        margin:       0.5,
-        filename:     'analytics-dashboard.pdf',
+        margin:       [0.4, 0.4, 0.4, 0.4],
+        filename:     `Analytics_Report_${new Date().toISOString().split('T')[0]}.pdf`,
         image:        { type: 'jpeg' as const, quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'in' as const, format: 'letter', orientation: 'portrait' as const }
+        html2canvas:  { scale: 2, useCORS: true, letterRendering: true },
+        jsPDF:        { unit: 'in' as const, format: 'a4' as const, orientation: 'portrait' as const }
       };
       html2pdf().set(opt).from(element).save();
+      toast({
+        title: "Downloaded!",
+        description: "Analytics dashboard PDF downloaded successfully.",
+      });
     }
   };
 
@@ -178,9 +185,9 @@ export default function Analytics() {
             </PopoverContent>
           </Popover>
 
-          <Button className="bg-gradient-primary h-9 px-1 sm:px-3 text-[10px] sm:text-sm" onClick={handleExportPDF}>
-            <Download className="mr-1 h-3 w-3 sm:mr-2 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="truncate">{t('export_csv', 'transactions', 'Export')}</span>
+          <Button className="bg-gradient-primary h-9 px-2 sm:px-3 text-xs sm:text-sm" onClick={handleExportPDF}>
+            <Download className="mr-1 h-3.5 w-3.5 sm:mr-2 sm:h-4 sm:w-4 flex-shrink-0" />
+            <span className="truncate">{t('export_pdf', 'transactions', 'Download PDF')}</span>
           </Button>
         </div>
       </div>

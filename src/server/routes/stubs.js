@@ -40,23 +40,7 @@ router.delete('/loans/:id', (req, res) => {
   res.json({ success: true });
 });
 
-// ── Reports ────────────────────────────────────────────────────────────────────
-router.get('/reports', (_req, res) => {
-  res.json([
-    { id: 'monthly', name: 'Monthly Summary', description: 'Income, expense & profit summary' },
-    { id: 'category', name: 'Category Breakdown', description: 'Spending by category' },
-    { id: 'weekly', name: 'Weekly Trends', description: 'Last 7 days performance' },
-  ]);
-});
-
-router.get('/reports/generate/:id', (req, res) => {
-  // Returns a stub report payload — replace with real PDF generation later
-  res.json({
-    id: req.params.id,
-    generatedAt: new Date().toISOString(),
-    message: `Report "${req.params.id}" generated. PDF download coming soon.`,
-  });
-});
+// Reports are now handled by dedicated src/server/routes/reports.js
 
 // ── User Settings ──────────────────────────────────────────────────────────────
 router.get('/user/settings', (_req, res) => res.json(userSettings));

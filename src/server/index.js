@@ -16,6 +16,7 @@ import transactionRoutes from './routes/transactions.js';
 import analyticsRoutes from './routes/analytics.js';
 import voiceRoutes from './routes/voice.js';
 import billRoutes from './routes/bills.js';
+import reportRoutes from './routes/reports.js';
 import stubRoutes from './routes/stubs.js';
 import authRoutes, { requireAuth } from './routes/auth.js';
 import { getSummary, ready as dbReady } from './services/db.js';
@@ -131,7 +132,10 @@ app.use('/api/voice', requireAuth, voiceRoutes);
 // Bill scanning + confirmation — requires auth
 app.use('/api/bills', requireAuth, billRoutes);
 
-// Stub routes (loans, reports, user settings) — must come after specific routes
+// Business & financial reports — requires auth
+app.use('/api/reports', requireAuth, reportRoutes);
+
+// Stub routes (loans, user settings) — must come after specific routes
 app.use('/api', stubRoutes);
 
 // 404

@@ -26,13 +26,17 @@ import {
   Receipt,
   Edit,
   Trash2,
-  ExternalLink
+  ExternalLink,
+  Download
 } from "lucide-react";
 import { VoiceButton } from "@/components/VoiceButton";
 import { ManualTransactionDialog } from "@/components/ManualTransactionDialog";
 import { EditTransactionDialog } from "@/components/EditTransactionDialog";
 import { useI18n } from "@/contexts/I18nContext";
 import { usePreferences } from "@/contexts/PreferencesContext";
+import { useToast } from "@/hooks/use-toast";
+// @ts-ignore
+import html2pdf from "html2pdf.js";
 
 interface Transaction {
   id: string;
@@ -54,6 +58,8 @@ export default function Transactions() {
   const { language } = usePreferences();
   const isEnglish = language === 'en';
   const [searchParams, setSearchParams] = useSearchParams();
+  const { businessName, name } = usePreferences();
+  const { toast } = useToast();
   const validTabs = ["all", "today", "income", "expenses", "bills", "voice"];
   const currentTab = validTabs.includes(searchParams.get("tab") || "") ? (searchParams.get("tab") as string) : "all";
   const [activeTab, setActiveTab] = useState(currentTab);
@@ -139,6 +145,126 @@ export default function Transactions() {
 
     return matchesSearch && matchesType && matchesCategory && matchesDateRange();
   });
+
+  const downloadTransactionsPDF = () => {
+    if (filteredTransactions.length === 0) {
+      toast({
+        title: "No transactions",
+        description: "There are no transactions matching your current filters to download.",
+      });
+      return;
+    }
+
+    const totalIncome = filteredTransactions
+      .filter(t => t.type === 'income')
+      .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+    const totalExpense = filteredTransactions
+      .filter(t => t.type === 'expense')
+      .reduce((s, t) => s + (Number(t.amount) || 0), 0);
+    const netProfit = totalIncome - totalExpense;
+
+    const printContainer = document.createElement('div');
+    printContainer.style.padding = '24px';
+    printContainer.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+    printContainer.style.color = '#111827';
+    printContainer.style.backgroundColor = '#ffffff';
+
+    printContainer.innerHTML = `
+      <div style="border-bottom: 2px solid #e5e7eb; padding-bottom: 16px; margin-bottom: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <h1 style="font-size: 24px; font-weight: bold; margin: 0; color: #1e3a8a;">Trackify - Transaction History</h1>
+            <p style="font-size: 13px; color: #6b7280; margin: 4px 0 0 0;">
+              Generated: ${new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+            </p>
+          </div>
+          <div style="text-align: right;">
+            <p style="font-size: 16px; font-weight: 600; margin: 0;">${businessName || 'Trackify Business'}</p>
+            <p style="font-size: 12px; color: #6b7280; margin: 2px 0 0 0;">${name ? 'Owner: ' + name : ''}</p>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+        <div style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px; border-radius: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #166534; font-weight: 600; text-transform: uppercase;">Total Income</div>
+          <div style="font-size: 18px; font-weight: bold; color: #15803d; margin-top: 4px;">₹${totalIncome.toLocaleString()}</div>
+        </div>
+        <div style="background-color: #fef2f2; border: 1px solid #fecaca; padding: 12px; border-radius: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #991b1b; font-weight: 600; text-transform: uppercase;">Total Expenses</div>
+          <div style="font-size: 18px; font-weight: bold; color: #b91c1c; margin-top: 4px;">₹${totalExpense.toLocaleString()}</div>
+        </div>
+        <div style="background-color: #eff6ff; border: 1px solid #bfdbfe; padding: 12px; border-radius: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #1e40af; font-weight: 600; text-transform: uppercase;">Net Balance</div>
+          <div style="font-size: 18px; font-weight: bold; color: ${netProfit >= 0 ? '#15803d' : '#b91c1c'}; margin-top: 4px;">₹${netProfit.toLocaleString()}</div>
+        </div>
+        <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 12px; border-radius: 8px; text-align: center;">
+          <div style="font-size: 11px; color: #4b5563; font-weight: 600; text-transform: uppercase;">Total Records</div>
+          <div style="font-size: 18px; font-weight: bold; color: #111827; margin-top: 4px;">${filteredTransactions.length}</div>
+        </div>
+      </div>
+
+      <table style="width: 100%; border-collapse: collapse; font-size: 12px;">
+        <thead>
+          <tr style="background-color: #f3f4f6; text-align: left; border-bottom: 2px solid #e5e7eb;">
+            <th style="padding: 10px 12px;">Date & Time</th>
+            <th style="padding: 10px 12px;">Item / Description</th>
+            <th style="padding: 10px 12px;">Category</th>
+            <th style="padding: 10px 12px;">Source</th>
+            <th style="padding: 10px 12px; text-align: right;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filteredTransactions.map((tx, idx) => `
+            <tr style="border-bottom: 1px solid #e5e7eb; background-color: ${idx % 2 === 0 ? '#ffffff' : '#f9fafb'};">
+              <td style="padding: 8px 12px; color: #4b5563;">${tx.date} ${tx.time || ''}</td>
+              <td style="padding: 8px 12px; font-weight: 500;">${tx.item}</td>
+              <td style="padding: 8px 12px;">${tx.category}</td>
+              <td style="padding: 8px 12px; text-transform: capitalize; color: #6b7280;">${tx.source || 'manual'}</td>
+              <td style="padding: 8px 12px; text-align: right; font-weight: bold; color: ${tx.type === 'income' ? '#15803d' : '#dc2626'};">
+                ${tx.type === 'income' ? '+' : '-'}₹${Number(tx.amount).toLocaleString()}
+              </td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+
+      <div style="margin-top: 24px; padding-top: 12px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; font-size: 11px; color: #9ca3af;">
+        <span>Trackify Finance Tracker</span>
+        <span>Filter: ${filterType !== 'all' ? filterType : 'All Types'} | Category: ${filterCategory !== 'all' ? filterCategory : 'All Categories'}</span>
+      </div>
+    `;
+
+    document.body.appendChild(printContainer);
+
+    const opt = {
+      margin:       [0.4, 0.4, 0.4, 0.4],
+      filename:     `Transactions_${new Date().toISOString().split('T')[0]}.pdf`,
+      image:        { type: 'jpeg' as const, quality: 0.98 },
+      html2canvas:  { scale: 2, useCORS: true },
+      jsPDF:        { unit: 'in' as const, format: 'a4' as const, orientation: 'portrait' as const }
+    };
+
+    html2pdf().set(opt).from(printContainer).save().then(() => {
+      if (document.body.contains(printContainer)) {
+        document.body.removeChild(printContainer);
+      }
+      toast({
+        title: "Downloaded!",
+        description: "Transactions PDF downloaded successfully.",
+      });
+    }).catch((err: any) => {
+      console.error('PDF export error:', err);
+      if (document.body.contains(printContainer)) {
+        document.body.removeChild(printContainer);
+      }
+      toast({
+        variant: "destructive",
+        title: "Export Failed",
+        description: "Failed to create PDF file.",
+      });
+    });
+  };
 
   // Get today's and yesterday's dates dynamically — use LOCAL date not UTC
   const toLocalDateStr = (d: Date) =>
@@ -372,6 +498,11 @@ export default function Transactions() {
               </div>
             </PopoverContent>
           </Popover>
+
+          <Button variant="outline" size="sm" className="flex-1 px-2 text-xs sm:text-sm sm:px-3 whitespace-nowrap" onClick={downloadTransactionsPDF}>
+            <Download className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
+            <span className="truncate">{t('export_pdf', 'transactions', 'Download PDF')}</span>
+          </Button>
 
           <Button size="sm" className="flex-1 px-2 text-xs sm:text-sm sm:px-3 bg-gradient-primary whitespace-nowrap" onClick={() => setIsManualDialogOpen(true)}>
             <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4 shrink-0" />
