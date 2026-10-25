@@ -39,7 +39,7 @@ const NAV_KEYS = {
   settings: "Settings",
   help: "Help",
   mainMenu: "Main Menu",
-  learnAndGrow: "Learn & Grow",
+  learnAndGrow: "Courses",
   support: "Support",
   financeTracker: "Finance Tracker",
 };

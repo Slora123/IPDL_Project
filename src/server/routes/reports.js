@@ -30,9 +30,9 @@ router.get('/', (_req, res) => {
       description: 'Current month and all-time category spending & income analysis',
     },
     {
-      id: 'voice-accuracy',
-      name: 'Voice & Channel Breakdown',
-      description: 'Voice recognition usage and language distribution',
+      id: 'tutorials',
+      name: 'Tutorials & Knowledge',
+      description: 'Educational modules, tutorials progress, and financial guides',
     },
   ]);
 });
@@ -147,7 +147,15 @@ async function buildReport(userId, reportId, clientDate) {
     };
   }
 
-  if (reportId === 'voice-accuracy') {
+  if (reportId === 'tutorials' || reportId === 'tutorials-report' || reportId === 'voice-accuracy') {
+    const tutorialsList = [
+      { title: "Small Business Financial Management", category: "Finance", duration: "2h 30m", lessons: 8, status: "Available", level: "Beginner" },
+      { title: "Digital Growth for Retailers", category: "Marketing", duration: "3h 45m", lessons: 12, status: "Available", level: "Intermediate" },
+      { title: "Finance For Beginners", category: "Tutorial", duration: "8:32", lessons: 1, status: "Available", level: "Beginner" },
+      { title: "Reading Your Financial Dashboard", category: "Analytics", duration: "12:15", lessons: 1, status: "Available", level: "All Levels" },
+      { title: "Small Business Accounting", category: "Setup", duration: "6:45", lessons: 1, status: "Available", level: "Beginner" },
+    ];
+
     const langMap = {};
     let totalIncome = 0;
     let totalExpenses = 0;
@@ -168,14 +176,15 @@ async function buildReport(userId, reportId, clientDate) {
     }));
 
     return {
-      reportId: 'voice-accuracy',
-      reportName: 'Voice & Input Accuracy Report',
-      period: 'All-Time Input Breakdown',
+      reportId: 'tutorials',
+      reportName: 'Tutorials & Financial Knowledge Report',
+      period: 'All Tutorials & Video Modules',
       date: todayStr,
       totalIncome,
       totalExpenses,
       netProfit: totalIncome - totalExpenses,
-      totalTransactions: allTxs.length,
+      totalTransactions: tutorialsList.length,
+      tutorialsList,
       languageBreakdown,
     };
   }
@@ -201,28 +210,26 @@ async function buildReport(userId, reportId, clientDate) {
   };
 }
 
-// POST /api/reports/generate/:id
-router.post('/generate/:id', async (req, res) => {
+const handleReportRequest = async (req, res) => {
   try {
     const clientDate = req.query.date || req.headers['x-client-date'];
-    const report = await buildReport(req.user.id, req.params.id, clientDate);
+    const reportId = req.params.id || 'today-summary';
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    const report = await buildReport(userId, reportId, clientDate);
     res.json(report);
   } catch (error) {
     console.error('[Reports] Error generating report:', error);
     res.status(500).json({ error: 'Failed to generate report' });
   }
-});
+};
 
-// GET /api/reports/generate/:id (compat)
-router.get('/generate/:id', async (req, res) => {
-  try {
-    const clientDate = req.query.date || req.headers['x-client-date'];
-    const report = await buildReport(req.user.id, req.params.id, clientDate);
-    res.json(report);
-  } catch (error) {
-    console.error('[Reports] Error generating report:', error);
-    res.status(500).json({ error: 'Failed to generate report' });
-  }
-});
+// Support multiple routing formats so no URL ever 404s
+router.post('/generate/:id', handleReportRequest);
+router.get('/generate/:id', handleReportRequest);
+router.post('/:id', handleReportRequest);
+router.get('/:id', handleReportRequest);
 
 export default router;

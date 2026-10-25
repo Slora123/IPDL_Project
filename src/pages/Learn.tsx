@@ -96,11 +96,11 @@ export default function Learn() {
         <TabsList className="grid w-full grid-cols-2 max-w-md h-auto gap-2 p-1">
           <TabsTrigger value="courses" className="flex items-center gap-2 py-2">
             <GraduationCap className="h-4 w-4" />
-            {t('learn_grow', 'common', 'Courses')}
+            {t('courses', 'learn', 'Courses')}
           </TabsTrigger>
           <TabsTrigger value="videos" className="flex items-center gap-2 py-2">
             <Video className="h-4 w-4" />
-            {t('voice_recorded', 'transactions', 'Video Tutorials')}
+            {t('tutorials', 'learn', 'Tutorials')}
           </TabsTrigger>
         </TabsList>
 
